@@ -1,4 +1,4 @@
-# 📝 User Management System
+# 👥 User Management System
 
 A robust full-stack user management application built with Node.js, Express, TypeScript, and MongoDB.
 
@@ -12,7 +12,7 @@ A robust full-stack user management application built with Node.js, Express, Typ
 
 ## 🚀 Tech Stack
 
-**Backend:** Node.js • Express • TypeScript • MySQl • Prisma • JWT  
+**Backend:** Node.js • Express • TypeScript • MySQL • Prisma • JWT  
 **Frontend:** React • Vite • TypeScript • Taildwind  
 **Dev Tools:** ESLint • Prettier • Nodemon
 

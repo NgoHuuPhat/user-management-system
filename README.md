@@ -1,6 +1,6 @@
 # 👥 User Management System
 
-A robust full-stack user management application built with Node.js, Express, TypeScript, and MongoDB.
+A robust full-stack user management application built with Node.js, Express, TypeScript, and MySQL.
 
 ## ✨ Features
 

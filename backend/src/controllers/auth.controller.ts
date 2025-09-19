@@ -1,8 +1,10 @@
 import { Request, Response } from 'express'
 import { PrismaClient } from '@prisma/client'
-import { generateAccessToken, generateRefreshToken, verifyAccessToken, verifyRefreshToken} from '@/services/token.service'
+import { generateAccessToken, generateRefreshToken, verifyResetToken, generateResetToken, verifyRefreshToken} from '@/services/token.service'
 import bcrypt from 'bcrypt'
 import { IUserRequest } from '@/types/user'
+import { mailTemplate, sendEmail } from '@/services/mail.service'
+import redisClient from '@/services/redis.service'
 
 const prisma = new PrismaClient()
 
@@ -92,6 +94,118 @@ class AuthController {
       res.status(500).json({ message: 'Internal server error' })
     }
   }
+
+  async forgotPassword(req: Request, res: Response) {
+    try {
+      const { email } = req.body
+      const user = await prisma.user.findUnique({ where: { email } })
+      if (!user) return res.status(404).json({ message: 'User not found' })
+      
+      const otp = Math.floor(100000 + Math.random() * 900000)
+      const result = await redisClient.set(`otp:${email}`, otp.toString(), { EX: 600, NX: true }) 
+      if(!result) {
+        return res.status(429).json({ message: 'OTP already exists, do not recreate' })
+      }
+
+      const html = mailTemplate(otp)
+      const subject = 'Password Reset OTP'
+      await sendEmail(email, subject, html)
+
+      return res.status(200).json({ message: 'OTP sent to email' })
+    } catch (error) {
+      res.status(500).json({ message: 'Internal server error' })
+    }
+    
+  }
+
+  async verifyOTP(req: Request, res: Response) {
+    try {
+      const { email, otp } = req.body
+      const storedOtp = await redisClient.get(`otp:${email}`)
+      
+      if (!storedOtp) return res.status(400).json({ message: 'OTP expired or not found' })
+      if (storedOtp !== otp.toString()) return res.status(400).json({ message: 'Invalid OTP' })
+
+      if (!storedOtp) return res.status(400).json({ message: 'OTP expired or not found' })
+      if (storedOtp !== otp.toString()) return res.status(400).json({ message: 'Invalid OTP' })
+
+      await redisClient.del(`otp:${email}`)
+
+      const resetToken = generateResetToken(email)
+      res.cookie('resetToken', resetToken, {
+          httpOnly: true,
+          secure: process.env.NODE_ENV === 'production',
+          sameSite: 'strict',
+          maxAge: 15 * 60 * 1000,
+      })
+
+      return res.status(200).json({ message: 'OTP verified' })
+    } catch (error) {
+      console.log(error)
+      res.status(500).json({ message: 'Internal server error' })
+    }
+  }
+
+  async resetPassword(req: Request, res: Response) {
+    try {
+      const resetToken = req.cookies.resetToken
+      if (!resetToken) {
+        return res.status(401).json({
+          message: 'Reset token is missing. Please request a new OTP.'
+        })
+      }
+
+      let decoded: { email: string }
+      try {
+        decoded = verifyResetToken(resetToken)
+      } catch {
+        return res.status(403).json({
+          message: 'Invalid or expired reset token. Please request a new OTP.'
+        })
+      }
+
+      const { email } = decoded
+
+      const { password, confirmPassword } = req.body
+
+      if (!password || !confirmPassword) {
+        return res.status(400).json({
+          message: 'Password and confirm password are required'
+        })
+      }
+
+      if (password !== confirmPassword) {
+        return res.status(400).json({
+          message: 'Passwords do not match'
+        })
+      }
+
+      const user = await prisma.user.findUnique({ where: { email } })
+      if (!user) {
+        return res.status(404).json({ message: 'User not found' })
+      }
+
+      const isSamePassword = await bcrypt.compare(password, user.password)
+      if (isSamePassword) {
+        return res.status(400).json({
+          message: 'New password must be different from the old password'
+        })
+      }
+
+      const hashedPassword = await bcrypt.hash(password, 10)
+      await prisma.user.update({
+        where: { email },
+        data: { password: hashedPassword }
+      })
+
+      res.clearCookie('resetToken')
+      return res.status(200).json({ message: 'Password reset successful' })
+    } catch (error) {
+      console.error(error)
+      return res.status(500).json({ message: 'Internal server error' })
+    }
+  }
+
 }
 
 export default new AuthController()

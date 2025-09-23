@@ -3,12 +3,12 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardFooter, CardTitle, CardHeader} from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { Checkbox } from "@radix-ui/react-checkbox"
-import { Separator } from "@radix-ui/react-separator"
+import { Checkbox } from "@/components/ui/checkbox"
 import { Alert, AlertDescription } from "@/components/ui/alert"
-import { Eye, EyeOff, Mail, Lock, Sparkles } from "lucide-react"
+import { Eye, EyeOff, Check, Mail, Lock } from "lucide-react"
 import { login } from "@/services/api"
 import { handleError } from "@/utils/handleError"
+import { useAuth } from "@/hooks/useAuth"
 
 export const LoginPage = () => {
   const [email, setEmail] = useState("")
@@ -17,6 +17,7 @@ export const LoginPage = () => {
   const [rememberMe, setRememberMe] = useState(false)
   const [error, setError] = useState("")
   const [isLoading, setIsLoading] = useState(false)
+  const { setUser } = useAuth()
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault()
@@ -30,48 +31,38 @@ export const LoginPage = () => {
     }
 
     try {
-      await login(email, password, rememberMe)
-      alert("Login successful!")
+      const res = await login(email, password, rememberMe)
+      setUser(res.user)
+      setIsLoading(false)
     } catch (error) {
       console.error("Login error:", error)
       setError(handleError(error))
-    } finally {
-      setIsLoading(false)
     }
   }
 
   return (
-    <div className="min-h-screen w-full overflow-auto">
-      <div className="absolute inset-0 bg-gradient-to-br from-purple-600 via-pink-600 to-blue-600">
-        <div className="absolute inset-0 bg-gradient-to-tl from-yellow-400 via-red-500 to-pink-500 opacity-50"></div>
-        <div className="absolute inset-0 bg-black opacity-10"></div>
+    <div className="min-h-screen w-full overflow-hidden relative">
+      <div className="fixed inset-0 bg-gradient-to-br from-blue-300 via-cyan-200 to-teal-300">
+        <div className="absolute top-10 left-10 w-20 h-20 bg-white/30 rounded-full blur-xl animate-pulse"></div>
+        <div className="absolute top-40 right-20 w-32 h-32 bg-yellow-100/40 rounded-full blur-2xl animate-bounce"></div>
+        <div className="absolute bottom-20 left-1/4 w-16 h-16 bg-pink-100/40 rounded-full blur-lg animate-ping"></div>
+        <div className="absolute bottom-40 right-10 w-24 h-24 bg-blue-100/40 rounded-full blur-xl animate-pulse delay-1000"></div>
+        <div className="absolute top-1/3 left-1/3 w-12 h-12 bg-teal-100/35 rounded-full blur-lg animate-pulse delay-500"></div>
+        <div className="absolute top-2/3 right-1/3 w-28 h-28 bg-cyan-100/35 rounded-full blur-2xl animate-bounce delay-700"></div>
       </div>
-      
-      <div className="absolute top-10 left-10 w-20 h-20 bg-white/20 rounded-full blur-xl animate-pulse"></div>
-      <div className="absolute top-40 right-20 w-32 h-32 bg-yellow-300/30 rounded-full blur-2xl animate-bounce"></div>
-      <div className="absolute bottom-20 left-1/4 w-16 h-16 bg-pink-400/40 rounded-full blur-lg animate-ping"></div>
-      <div className="absolute bottom-40 right-10 w-24 h-24 bg-blue-400/30 rounded-full blur-xl animate-pulse delay-1000"></div>
 
-      <div className="relative z-10 min-h-screen flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
-        <div className="max-w-md w-full space-y-8">
-          <div className="text-center">
-            <div className="flex justify-center mb-4">
-              <div className="p-3 rounded-full bg-gradient-to-r from-pink-500 to-violet-500 shadow-2xl">
-                <Sparkles className="h-8 w-8 text-white" />
-              </div>
-            </div>
-            <h1 className="text-4xl font-bold text-white drop-shadow-lg">
-              Chào mừng trở lại!
+      <div className="relative z-10 min-h-screen flex items-center justify-center px-4 py-8 sm:px-6 lg:px-8">
+        <div className="max-w-lg w-full space-y-8">
+          <div className="flex items-center justify-center space-x-4">
+            <h1 className="text-4xl font-bold text-center text-white drop-shadow-lg">
+              User Management System
             </h1>
-            <p className="mt-3 text-lg text-white/90 drop-shadow">
-              Đăng nhập để tiếp tục hành trình của bạn
-            </p>
           </div>
-          
-          <Card className="backdrop-blur-xl bg-white/10 border-white/20 shadow-2xl">
+
+          <Card className="bg-white border-gray-200 shadow-2xl py-10 px-6">
             <CardHeader className="space-y-1 text-center">
-              <CardTitle className="text-3xl text-white font-bold">Đăng Nhập</CardTitle>
-              <CardDescription className="text-white/80 text-base">
+              <CardTitle className="text-3xl text-gray-800 font-bold">ĐĂNG NHẬP</CardTitle>
+              <CardDescription className="text-gray-600 text-base">
                 Nhập thông tin để truy cập tài khoản
               </CardDescription>
             </CardHeader>
@@ -79,20 +70,20 @@ export const LoginPage = () => {
             <form onSubmit={handleSubmit}> 
               <CardContent className="space-y-6">
                 {error && (
-                  <Alert className="bg-red-500/20 border-red-300/50 backdrop-blur-sm">
-                    <AlertDescription className="text-white">{error}</AlertDescription>
+                  <Alert className="bg-red-100/50 border-red-300/50">
+                    <AlertDescription className="text-red-700">{error}</AlertDescription>
                   </Alert>
                 )}
 
                 <div className="space-y-3">
-                  <Label htmlFor="email" className="text-white font-semibold text-base">Email</Label>
+                  <Label htmlFor="email" className="text-gray-700 font-semibold text-base">Email</Label>
                   <div className="relative group">
-                    <Mail className="absolute left-4 top-4 h-5 w-5 text-white/70 group-hover:text-white transition-colors" />
+                    <Mail className="absolute left-4 top-4 h-5 w-5 text-gray-500 group-hover:text-gray-700 transition-colors" />
                     <Input
                       id="email"
                       type="email"
                       value={email}
-                      className="pl-12 h-12 bg-white/20 border-white/30 text-white placeholder:text-white/60 backdrop-blur-sm focus:bg-white/30 focus:border-white/60 transition-all duration-300"
+                      className="pl-12 h-12 bg-gray-50 border-gray-300 text-gray-800 placeholder:text-gray-400 focus:bg-gray-100 focus:border-cyan-400 transition-all duration-300"
                       onChange={(e) => setEmail(e.target.value)}
                       placeholder="Nhập email của bạn"
                       disabled={isLoading}
@@ -101,14 +92,14 @@ export const LoginPage = () => {
                 </div>
 
                 <div className="space-y-3">
-                  <Label htmlFor="password" className="text-white font-semibold text-base">Mật khẩu</Label>
+                  <Label htmlFor="password" className="text-gray-700 font-semibold text-base">Mật khẩu</Label>
                   <div className="relative group">
-                    <Lock className="absolute left-4 top-4 h-5 w-5 text-white/70 group-hover:text-white transition-colors" />
+                    <Lock className="absolute left-4 top-4 h-5 w-5 text-gray-500 group-hover:text-gray-700 transition-colors" />
                     <Input
                       id="password"
                       type={showPassword ? "text" : "password"}
                       placeholder="Nhập mật khẩu"
-                      className="pl-12 pr-12 h-12 bg-white/20 border-white/30 text-white placeholder:text-white/60 backdrop-blur-sm focus:bg-white/30 focus:border-white/60 transition-all duration-300"
+                      className="pl-12 pr-12 h-12 bg-gray-50 border-gray-300 text-gray-800 placeholder:text-gray-400 focus:bg-gray-100 focus:border-cyan-400 transition-all duration-300"
                       value={password}
                       onChange={(e) => setPassword(e.target.value)}
                       disabled={isLoading}
@@ -116,9 +107,9 @@ export const LoginPage = () => {
 
                     <Button 
                       type="button"
-                      variant="ghost"
-                      size="sm"
-                      className="absolute right-0 top-0 h-full px-4 hover:bg-white/10 text-white/70 hover:text-white transition-all duration-300"
+                      variant="link"
+                      size="lg"
+                      className="absolute right-0 top-0 h-full px-4 cursor-pointer"
                       onClick={() => setShowPassword(!showPassword)}
                       disabled={isLoading}
                     >
@@ -127,43 +118,44 @@ export const LoginPage = () => {
                   </div>
                 </div>
 
-                <div className="flex items-center justify-between">
+                <div className="flex items-center justify-between mb-6">
                   <div className="flex items-center space-x-3">
                     <Checkbox
                       id="remember"
                       checked={rememberMe}
                       onCheckedChange={(checked) => setRememberMe(checked as boolean)}
                       disabled={isLoading}
-                      className="w-5 h-5 border-white/30 data-[state=checked]:bg-gradient-to-r data-[state=checked]:from-pink-500 data-[state=checked]:to-violet-500"
-                    />
-                    <Label htmlFor="remember" className="text-white/90 font-medium">Ghi nhớ đăng nhập</Label>
+                      className="w-5 h-5 border-gray-300 relative cursor-pointer flex items-center justify-center data-[state=checked]:bg-gradient-to-r data-[state=checked]:from-blue-300 data-[state=checked]:to-cyan-300 data-[state=checked]:border-none"
+                    >
+                      <span className="absolute text-white w-3 h-3 data-[state=unchecked]:hidden">
+                        <Check className="w-3 h-3 stroke-3" />
+                      </span>
+                    </Checkbox>
+                    <Label htmlFor="remember" className="cursor-pointer text-gray-700 font-semibold">Ghi nhớ đăng nhập</Label>
                   </div>
-                  <Button variant="link" className="px-0 text-white/80 hover:text-white font-semibold">
+                  <a className="px-0 text-gray-600 hover:text-blue-400 font-semibold cursor-pointer text-sm">
                     Quên mật khẩu?
-                  </Button>
+                  </a>
                 </div>
               </CardContent>
 
               <CardFooter className="flex flex-col space-y-6">
                 <Button 
                   type="submit" 
-                  className="w-full h-12 bg-gradient-to-r from-pink-500 via-purple-500 to-indigo-600 hover:from-pink-600 hover:via-purple-600 hover:to-indigo-700 text-white font-bold text-lg shadow-2xl transform hover:scale-105 transition-all duration-300" 
+                  className="w-full h-12 bg-gradient-to-r transition-all duration-300 hover:scale-102 from-blue-300 via-cyan-300 to-teal-300 hover:from-blue-400 hover:via-cyan-400 hover:to-teal-400 text-white font-bold text-lg shadow-2xl cursor-pointer" 
                   disabled={isLoading}
                 >
                   {isLoading ? (
                     <div className="flex items-center space-x-2">
-                      <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+                      <div className="w-5 h-5 border-2 border-white/50 border-t-white rounded-full animate-spin"></div>
                       <span>Đang đăng nhập...</span>
                     </div>
-                  ) : "Đăng Nhập"}
+                  ) : "Đăng nhập"}
                 </Button>
 
                 <div className="relative w-full">
-                  <div className="absolute inset-0 flex items-center">
-                    <Separator className="w-full border-white/30" />
-                  </div>
                   <div className="relative flex justify-center text-sm uppercase">
-                    <span className="bg-gradient-to-r from-pink-500/20 to-purple-500/20 backdrop-blur-sm px-4 py-1 text-white/80 font-semibold rounded-full">
+                    <span className="bg-gradient-to-r from-blue-200/20 to-cyan-200/20 px-4 py-1 text-gray-600 font-semibold rounded-full">
                       Hoặc tiếp tục với
                     </span>
                   </div>
@@ -173,7 +165,7 @@ export const LoginPage = () => {
                   <Button 
                     variant="outline" 
                     disabled={isLoading} 
-                    className="flex items-center justify-center gap-3 h-12 bg-white/10 border-white/30 text-white hover:bg-white/20 hover:border-white/50 backdrop-blur-sm transition-all duration-300 transform hover:scale-105"
+                    className="flex items-center justify-center cursor-pointer gap-3 h-12 bg-gray-50 border-gray-300 text-gray-700 hover:bg-gray-100 hover:border-gray-400 transition-all duration-300 transform hover:scale-102"
                   >
                     <svg
                       version="1.1"
@@ -204,7 +196,7 @@ export const LoginPage = () => {
                   <Button 
                     variant="outline" 
                     disabled={isLoading}
-                    className="flex items-center justify-center gap-3 h-12 bg-white/10 border-white/30 text-white hover:bg-white/20 hover:border-white/50 backdrop-blur-sm transition-all duration-300 transform hover:scale-105"
+                    className="flex items-center justify-center cursor-pointer gap-3 h-12 bg-gray-50 border-gray-300 text-gray-700 hover:bg-gray-100 hover:border-gray-400 transition-all duration-300 transform hover:scale-102"
                   >
                     <svg className="h-5 w-5" fill="currentColor" viewBox="0 0 24 24">
                       <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/>

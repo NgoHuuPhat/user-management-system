@@ -35,14 +35,17 @@ class AuthController {
         sameSite: 'strict',
         maxAge: rememberMe ? 30 * 24 * 60 * 60 * 1000 : 7 * 24 * 60 * 60 * 1000
       })
-      
+            
       return res.status(200).json({ 
         message: 'Login successful',
         user: {
           id: user.id,
           name: user.name,
           email: user.email,
-          role: user.role.name
+          role: user.role,
+          roleId: user.roleId,
+          createdAt: user.createdAt,
+          updatedAt: user.updatedAt
         }
       })
     } catch (error) {
@@ -89,8 +92,10 @@ class AuthController {
       if (!user) {
         return res.status(404).json({ message: 'User not found' })
       }
-      return res.status(200).json({ user })
+      const { password, ...userWithoutPassword } = user
+      return res.status(200).json({ user: userWithoutPassword })
     } catch (error) {
+      console.error(error)
       res.status(500).json({ message: 'Internal server error' })
     }
   }

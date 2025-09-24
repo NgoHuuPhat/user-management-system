@@ -23,7 +23,7 @@ const mailTemplate = (otp: number) => {
       <h2 style="color: #333;">Password Reset OTP</h2>
       <p>Your OTP for password reset is:</p>
       <h1 style="color: #007BFF;">${otp}</h1>
-      <p>This OTP is valid for the next 10 minutes. If you did not request a password reset, please ignore this email.</p>
+      <p>This OTP is valid for the next 3 minutes. If you did not request a password reset, please ignore this email.</p>
       <br/>
       <p>Best regards,<br/>User Management System Team</p>
     </div>

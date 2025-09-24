@@ -107,9 +107,9 @@ class AuthController {
       if (!user) return res.status(404).json({ message: 'User not found' })
       
       const otp = Math.floor(100000 + Math.random() * 900000)
-      const result = await redisClient.set(`otp:${email}`, otp.toString(), { EX: 600, NX: true }) 
+      const result = await redisClient.set(`otp:${email}`, otp.toString(), { EX: 180, NX: true }) 
       if(!result) {
-        return res.status(429).json({ message: 'OTP already exists, do not recreate' })
+        return res.status(400).json({ message: 'OTP already exists, please check your email' })
       }
 
       const html = mailTemplate(otp)
@@ -127,13 +127,9 @@ class AuthController {
     try {
       const { email, otp } = req.body
       const storedOtp = await redisClient.get(`otp:${email}`)
-      
-      if (!storedOtp) return res.status(400).json({ message: 'OTP expired or not found' })
+            
+      if (!storedOtp) return res.status(400).json({ message: 'OTP expired' })
       if (storedOtp !== otp.toString()) return res.status(400).json({ message: 'Invalid OTP' })
-
-      if (!storedOtp) return res.status(400).json({ message: 'OTP expired or not found' })
-      if (storedOtp !== otp.toString()) return res.status(400).json({ message: 'Invalid OTP' })
-
       await redisClient.del(`otp:${email}`)
 
       const resetToken = generateResetToken(email)
@@ -155,34 +151,25 @@ class AuthController {
     try {
       const resetToken = req.cookies.resetToken
       if (!resetToken) {
-        return res.status(401).json({
-          message: 'Reset token is missing. Please request a new OTP.'
-        })
+        return res.status(401).json({message: 'Reset token not found. Please request a new OTP.'})
       }
 
       let decoded: { email: string }
       try {
         decoded = verifyResetToken(resetToken)
       } catch {
-        return res.status(403).json({
-          message: 'Invalid or expired reset token. Please request a new OTP.'
-        })
+        return res.status(403).json({message: 'Invalid or expired reset token. Please request a new OTP.'})
       }
 
       const { email } = decoded
-
       const { password, confirmPassword } = req.body
 
       if (!password || !confirmPassword) {
-        return res.status(400).json({
-          message: 'Password and confirm password are required'
-        })
+        return res.status(400).json({message: 'Password and confirm password are required'})
       }
 
       if (password !== confirmPassword) {
-        return res.status(400).json({
-          message: 'Passwords do not match'
-        })
+        return res.status(400).json({message: 'Passwords do not match'})
       }
 
       const user = await prisma.user.findUnique({ where: { email } })
@@ -192,9 +179,7 @@ class AuthController {
 
       const isSamePassword = await bcrypt.compare(password, user.password)
       if (isSamePassword) {
-        return res.status(400).json({
-          message: 'New password must be different from the old password'
-        })
+        return res.status(400).json({message: 'New password must be different from the old password'})
       }
 
       const hashedPassword = await bcrypt.hash(password, 10)

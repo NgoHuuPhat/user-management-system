@@ -1,6 +1,6 @@
 import React, { useState } from "react"
 import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardDescription, CardFooter, CardTitle, CardHeader} from "@/components/ui/card"
+import { Card, CardContent, CardFooter, CardTitle, CardHeader} from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Checkbox } from "@/components/ui/checkbox"
@@ -9,6 +9,7 @@ import { Eye, EyeOff, Check, Mail, Lock } from "lucide-react"
 import { login } from "@/services/api"
 import { handleError } from "@/utils/handleError"
 import { useAuth } from "@/hooks/useAuth"
+import { Link } from "react-router-dom"
 
 export const LoginPage = () => {
   const [email, setEmail] = useState("")
@@ -33,10 +34,11 @@ export const LoginPage = () => {
     try {
       const res = await login(email, password, rememberMe)
       setUser(res.user)
-      setIsLoading(false)
     } catch (error) {
       console.error("Login error:", error)
       setError(handleError(error))
+    } finally {
+      setIsLoading(false)
     }
   }
 
@@ -52,23 +54,20 @@ export const LoginPage = () => {
       </div>
 
       <div className="relative z-10 min-h-screen flex items-center justify-center px-4 py-8 sm:px-6 lg:px-8">
-        <div className="max-w-lg w-full space-y-8">
-          <div className="flex items-center justify-center space-x-4">
+        <div className="max-w-md w-full space-y-8">
+          <div className="flex items-center justify-center">
             <h1 className="text-4xl font-bold text-center text-white drop-shadow-lg">
               User Management System
             </h1>
           </div>
 
-          <Card className="bg-white border-gray-200 shadow-2xl py-10 px-6">
+          <Card className="bg-white border-gray-200 gap-4 shadow-2xl py-10 px-6" id="login-card">
             <CardHeader className="space-y-1 text-center">
               <CardTitle className="text-3xl text-gray-800 font-bold">ĐĂNG NHẬP</CardTitle>
-              <CardDescription className="text-gray-600 text-base">
-                Nhập thông tin để truy cập tài khoản
-              </CardDescription>
             </CardHeader>
 
             <form onSubmit={handleSubmit}> 
-              <CardContent className="space-y-6">
+              <CardContent className="space-y-4">
                 {error && (
                   <Alert className="bg-red-100/50 border-red-300/50">
                     <AlertDescription className="text-red-700">{error}</AlertDescription>
@@ -133,9 +132,9 @@ export const LoginPage = () => {
                     </Checkbox>
                     <Label htmlFor="remember" className="cursor-pointer text-gray-700 font-semibold">Ghi nhớ đăng nhập</Label>
                   </div>
-                  <a className="px-0 text-gray-600 hover:text-blue-400 font-semibold cursor-pointer text-sm">
+                  <Link to="/forgot-password" className="px-0 text-gray-600 hover:text-blue-400 font-semibold cursor-pointer text-sm">
                     Quên mật khẩu?
-                  </a>
+                  </Link>
                 </div>
               </CardContent>
 
@@ -163,6 +162,7 @@ export const LoginPage = () => {
 
                 <div className="grid grid-cols-2 gap-4 w-full">
                   <Button 
+                    type="button"
                     variant="outline" 
                     disabled={isLoading} 
                     className="flex items-center justify-center cursor-pointer gap-3 h-12 bg-gray-50 border-gray-300 text-gray-700 hover:bg-gray-100 hover:border-gray-400 transition-all duration-300 transform hover:scale-102"
@@ -194,6 +194,7 @@ export const LoginPage = () => {
                     <span className="font-semibold">Google</span>
                   </Button>
                   <Button 
+                    type="button"
                     variant="outline" 
                     disabled={isLoading}
                     className="flex items-center justify-center cursor-pointer gap-3 h-12 bg-gray-50 border-gray-300 text-gray-700 hover:bg-gray-100 hover:border-gray-400 transition-all duration-300 transform hover:scale-102"

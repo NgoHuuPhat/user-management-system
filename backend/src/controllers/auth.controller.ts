@@ -4,7 +4,8 @@ import { generateAccessToken, generateRefreshToken, verifyResetToken, generateRe
 import bcrypt from 'bcrypt'
 import { IUserRequest } from '@/types/user'
 import { mailTemplate, sendEmail } from '@/services/mail.service'
-import redisClient from '@/services/redis.service'
+import { redisClient } from '@/services/redis.service'
+import { addEmailToQueue } from '@/queues/email.queue'
 
 const prisma = new PrismaClient()
 
@@ -107,20 +108,19 @@ class AuthController {
       if (!user) return res.status(404).json({ message: 'User not found' })
       
       const otp = Math.floor(100000 + Math.random() * 900000)
-      const result = await redisClient.set(`otp:${email}`, otp.toString(), { EX: 180, NX: true }) 
+      const result = await redisClient.set(`otp:${email}`, otp.toString(), 'EX', 180, 'NX')
       if(!result) {
         return res.status(400).json({ message: 'OTP already exists, please check your email' })
       }
 
       const html = mailTemplate(otp)
       const subject = 'Password Reset OTP'
-      await sendEmail(email, subject, html)
+      await addEmailToQueue(email, subject, html)
 
       return res.status(200).json({ message: 'OTP sent to email' })
     } catch (error) {
       res.status(500).json({ message: 'Internal server error' })
     }
-    
   }
 
   async verifyOTP(req: Request, res: Response) {

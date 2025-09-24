@@ -3,6 +3,7 @@ import router from '@/routes/index.routes'
 import cookieParser from 'cookie-parser'
 import dotenv from 'dotenv'
 import cors from 'cors'
+import '@/workers/email.worker'
 
 dotenv.config()
 

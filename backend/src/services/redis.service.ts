@@ -1,13 +1,14 @@
-import { createClient } from "redis"
+import Redis from 'ioredis'
 
-const redisClient = createClient({
-  url: process.env.REDIS_URL
-})
-
-redisClient.on("error", (err) => console.log("Redis Client Error", err))
-async function connectRedis() {
-  await redisClient.connect()
+const bullMQConfig = {
+  maxRetriesPerRequest: null
 }
-connectRedis()
 
-export default redisClient
+export const redisClient = new Redis(process.env.REDIS_URL!)
+redisClient.on('error', (err) => console.log('Redis Client Error', err))
+
+export const queueClient = new Redis(process.env.REDIS_URL!, bullMQConfig)
+queueClient.on('error', (err) => console.log('Redis Queue Client Error', err))
+
+export const workerClient = new Redis(process.env.REDIS_URL!, bullMQConfig)
+workerClient.on('error', (err) => console.log('Redis Worker Client Error', err))

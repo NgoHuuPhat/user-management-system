@@ -134,7 +134,7 @@ class AdminController {
         where: { id: Number(id) },
         data: updateData
       })
-      const {password: ad, ...userWithoutPassword} = user
+      const {password: _, ...userWithoutPassword} = user
 
       res.status(200).json({
         message: 'User updated successfully',

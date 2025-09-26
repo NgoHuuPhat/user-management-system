@@ -27,13 +27,13 @@ class AuthController {
       res.cookie('accessToken', accessToken, { 
         httpOnly: true, 
         secure: process.env.NODE_ENV === 'production',
-        sameSite: 'strict',
-        maxAge: 15 * 60 * 1000 
+        sameSite: process.env.NODE_ENV === 'production' ? 'strict' : 'lax',
+        maxAge: 15 * 60 * 1000
       })
       res.cookie('refreshToken', refreshToken, { 
         httpOnly: true, 
         secure: process.env.NODE_ENV === 'production',
-        sameSite: 'strict',
+        sameSite: process.env.NODE_ENV === 'production' ? 'strict' : 'lax',
         maxAge: rememberMe ? 30 * 24 * 60 * 60 * 1000 : 7 * 24 * 60 * 60 * 1000
       })
             
@@ -78,7 +78,7 @@ class AuthController {
       res.cookie('accessToken', newAccessToken, {
         httpOnly: true,
         secure: process.env.NODE_ENV === 'production',
-        sameSite: 'strict',
+        sameSite: process.env.NODE_ENV === 'production' ? 'strict' : 'lax',
         maxAge: 15 * 60 * 1000 
       })
       return res.status(200).json({ message: 'Refresh token successful' })
@@ -136,7 +136,7 @@ class AuthController {
       res.cookie('resetToken', resetToken, {
           httpOnly: true,
           secure: process.env.NODE_ENV === 'production',
-          sameSite: 'strict',
+          sameSite: process.env.NODE_ENV === 'production' ? 'strict' : 'lax',
           maxAge: 15 * 60 * 1000,
       })
 

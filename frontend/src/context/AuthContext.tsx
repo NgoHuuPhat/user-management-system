@@ -1,11 +1,12 @@
 import { createContext, useState, useEffect } from 'react'
-import { getCurrentUser } from '@/services/api'
+import { getCurrentUser, logout} from '@/services/api'
 import type { IAuthContextType, IUser} from '@/types/user'
 
 const AuthContext = createContext<IAuthContextType>({
     user: null,
     setUser: () => {},
-    loading: true
+    loading: true,
+    logout: async () => {}
 })
 
 export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
@@ -28,8 +29,13 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         fetchUser()
     }, [])
 
+    const handleLogout = async () => {
+      await logout()
+      setUser(null)
+    }
+
     return (
-        <AuthContext.Provider value={{ user, setUser, loading }}>
+        <AuthContext.Provider value={{ user, setUser, loading, logout: handleLogout }}>
             {children}
         </AuthContext.Provider>
     )

@@ -15,6 +15,11 @@ export const login = async (email: string, password: string, rememberMe: boolean
   return res.data
 }
 
+export const logout = async () => {
+  const res = await request.post("/auth/logout")
+  return res.data
+}
+
 export const getCurrentUser = async () => {
   const res = await request.get("/auth/me")
   return res.data

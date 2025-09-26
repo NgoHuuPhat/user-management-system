@@ -1,5 +1,5 @@
 import { Routes, Route } from "react-router-dom"
-import HomePage from "@/pages/HomePage"
+import DashboardPage from "@/pages/DashboardPage"
 import LoginPage from "@/pages/LoginPagePage"
 import ProtectedRoute from "@/components/auth/ProtectedRoute"
 import PublicOnlyRoute from "@/components/auth/PublicOnlyRoute"
@@ -12,7 +12,7 @@ function App() {
     <>
       <Routes>
         <Route path="/login" element={<PublicOnlyRoute><LoginPage /></PublicOnlyRoute>} />
-        <Route path="/" element={<ProtectedRoute><HomePage /></ProtectedRoute>} />
+        <Route path="/" element={<ProtectedRoute><DashboardPage /></ProtectedRoute>} />
         <Route path="/forgot-password" element={<ForgotPasswordPage />} />
         <Route path="/verify-otp" element={<VerifyOTPPage />} />
         <Route path="/reset-password" element={<ResetPasswordPage />} />

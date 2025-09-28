@@ -31,7 +31,7 @@ const ResetPasswordPage = () => {
     setLoading(true)
 
     if(!password || !confirmPassword) {
-      setError("Vui lòng nhập đầy đủ thông tin")
+      setError("Both password fields are required")
       setLoading(false)
       return
     }
@@ -58,14 +58,14 @@ const ResetPasswordPage = () => {
       <div className="relative w-full max-w-lg px-4">
         <Card className="bg-white/95 backdrop-blur-sm shadow-2xl rounded-2xl py-10 px-4 gap-4">
           <CardHeader className="text-center mb-2">
-            <CardTitle className="text-3xl font-bold">Tạo mật khẩu mới</CardTitle>
-            <p className="text-gray-600 text-sm mt-1">Vui lòng nhập mật khẩu mới của bạn</p>
+            <CardTitle className="text-3xl font-bold">Create New Password</CardTitle>
+            <p className="text-gray-600 text-sm mt-1">Please enter your new password</p>
           </CardHeader>
 
           <CardContent>
             <form onSubmit={handleSubmit} className="space-y-6">
               <div className="space-y-3">
-                <Label className="text-gray-700 font-semibold">Mật khẩu mới</Label>
+                <Label className="text-gray-700 font-semibold">New Password</Label>
                 <div className="relative">
                   <Input
                     id="password"
@@ -73,7 +73,7 @@ const ResetPasswordPage = () => {
                     value={password}
                     className="pl-6 h-12 bg-gray-50 border-gray-300 text-gray-800 placeholder:text-gray-400 focus:bg-gray-100 focus:border-cyan-400 transition-all duration-300"
                     onChange={(e) => setPassword(e.target.value)}
-                    placeholder="Nhập mật khẩu mới"
+                    placeholder="Enter your new password"
                   />
                   <div
                     onClick={() => setShowPassword(!showPassword)}
@@ -85,7 +85,7 @@ const ResetPasswordPage = () => {
               </div>
 
               <div className="space-y-3">
-                <Label className="text-gray-700 font-semibold">Nhập lại mật khẩu</Label>
+                <Label className="text-gray-700 font-semibold">Confirm Password</Label>
                 <div className="relative">
                   <Input
                     id="confirmPassword"
@@ -93,7 +93,7 @@ const ResetPasswordPage = () => {
                     value={confirmPassword}
                     className="pl-6 h-12 bg-gray-50 border-gray-300 text-gray-800 placeholder:text-gray-400 focus:bg-gray-100 focus:border-cyan-400 transition-all duration-300"
                     onChange={(e) => setConfirmPassword(e.target.value)}
-                    placeholder="Nhập lại mật khẩu mới"
+                    placeholder="Enter your new password"
                   />
                   <div
                     onClick={() => setShowConfirmPassword(!showConfirmPassword)}
@@ -111,9 +111,9 @@ const ResetPasswordPage = () => {
                 {loading ? (
                   <div className="flex items-center space-x-2">
                     <div className="w-5 h-5 border-2 border-white/50 border-t-white rounded-full animate-spin"></div>
-                    <span>Đang cập nhật...</span>
+                    <span>Updating...</span>
                   </div>
-                ) : "Cập nhật mật khẩu mới"}
+                ) : "Update Password"}
               </Button>
             </form>
             {error && (
@@ -128,16 +128,16 @@ const ResetPasswordPage = () => {
               to="/login"
               className="text-gray-600 hover:text-blue-400 font-semibold cursor-pointer text-sm"
             >
-              Quay về đăng nhập
+              Go back to login
             </Link>
             {error === "Invalid or expired reset token. Please request a new OTP." && (
               <>
                 <span>|</span>
                 <Link
-                    to="/forgot-password"
-                    className="text-gray-600 hover:text-blue-400 font-semibold cursor-pointer text-sm"
-                  >
-                  Yêu cầu OTP mới
+                  to="/forgot-password"
+                  className="text-gray-600 hover:text-blue-400 font-semibold cursor-pointer text-sm"
+                >
+                  Request New OTP
                 </Link>
               </>
             )}

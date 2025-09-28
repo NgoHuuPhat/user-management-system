@@ -52,7 +52,7 @@ const VerifyOTPPage = () => {
 
     try {
       await forgotPassword(email)
-      setSuccessMessage("OTP đã được gửi lại thành công. Vui lòng kiểm tra hộp thư đến của bạn.")
+      setSuccessMessage("OTP has been resent to your email.")
     } catch (error) {
       setError(handleError(error))
     } finally {
@@ -70,9 +70,9 @@ const VerifyOTPPage = () => {
 
       <Card className="relative w-full max-w-lg bg-white/95 backdrop-blur-sm shadow-2xl rounded-2xl p-8 gap-4">
         <CardHeader className="text-center space-y-2">
-          <CardTitle className="text-3xl font-bold">Nhập OTP</CardTitle>
+          <CardTitle className="text-3xl font-bold">Enter OTP</CardTitle>
           <p className=" text-gray-600 text-md">
-            Chúng tôi đã gửi mã xác minh 6 chữ số đến <span className="font-medium">{email}</span>. Vui lòng kiểm tra hộp thư đến của bạn.
+            We have sent a 6-digit verification code to <span className="font-medium">{email}</span>. Please check your inbox.
           </p>
         </CardHeader>
 
@@ -97,9 +97,9 @@ const VerifyOTPPage = () => {
               {loadingOTP ? (
                 <div className="flex items-center space-x-2">
                   <div className="w-5 h-5 border-2 border-white/50 border-t-white rounded-full animate-spin"></div>
-                  <span>Đang xác thực...</span>
+                  <span>Verifying...</span>
                 </div>
-              ) : "Gửi OTP"}
+              ) : "Send OTP"}
             </Button>
           </form>
         </CardContent>
@@ -117,16 +117,16 @@ const VerifyOTPPage = () => {
           )}
 
           <p className="text-sm text-gray-500 text-center">
-            Không nhận được email?{" "}
+            <span>Didn't receive the email? </span>
             <button onClick={handleResendEmail} className="text-blue-400 hover:text-blue-500 font-medium transition-colors cursor-pointer">
-              {loadingResend ? "Đang gửi lại..." : "Gửi lại OTP"}
+              {loadingResend ? "Resending..." : "Resend OTP"}
             </button>
           </p>
           <Link
             to="/login"
             className="text-gray-600 hover:text-blue-400 font-semibold cursor-pointer text-sm"
           >
-            Trở về Đăng nhập
+            Go back to login
           </Link>
         </CardFooter>
 

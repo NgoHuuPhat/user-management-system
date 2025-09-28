@@ -63,7 +63,7 @@ export const LoginPage = () => {
 
           <Card className="bg-white border-gray-200 gap-4 shadow-2xl py-10 px-6" id="login-card">
             <CardHeader className="space-y-1 text-center">
-              <CardTitle className="text-3xl text-gray-800 font-bold">ĐĂNG NHẬP</CardTitle>
+              <CardTitle className="text-3xl text-gray-800 font-bold">LOGIN</CardTitle>
             </CardHeader>
 
             <form onSubmit={handleSubmit}> 
@@ -84,20 +84,20 @@ export const LoginPage = () => {
                       value={email}
                       className="pl-12 h-12 bg-gray-50 border-gray-300 text-gray-800 placeholder:text-gray-400 focus:bg-gray-100 focus:border-cyan-400 transition-all duration-300"
                       onChange={(e) => setEmail(e.target.value)}
-                      placeholder="Nhập email của bạn"
+                      placeholder="Enter your email"
                       disabled={isLoading}
                     />
                   </div>
                 </div>
 
                 <div className="space-y-3">
-                  <Label htmlFor="password" className="text-gray-700 font-semibold text-base">Mật khẩu</Label>
+                  <Label htmlFor="password" className="text-gray-700 font-semibold text-base">Password</Label>
                   <div className="relative group">
                     <Lock className="absolute left-4 top-4 h-5 w-5 text-gray-500 group-hover:text-gray-700 transition-colors" />
                     <Input
                       id="password"
                       type={showPassword ? "text" : "password"}
-                      placeholder="Nhập mật khẩu"
+                      placeholder="Enter your password"
                       className="pl-12 pr-12 h-12 bg-gray-50 border-gray-300 text-gray-800 placeholder:text-gray-400 focus:bg-gray-100 focus:border-cyan-400 transition-all duration-300"
                       value={password}
                       onChange={(e) => setPassword(e.target.value)}
@@ -130,10 +130,10 @@ export const LoginPage = () => {
                         <Check className="w-3 h-3 stroke-3" />
                       </span>
                     </Checkbox>
-                    <Label htmlFor="remember" className="cursor-pointer text-gray-700 font-semibold">Ghi nhớ đăng nhập</Label>
+                    <Label htmlFor="remember" className="cursor-pointer text-gray-700 font-semibold">Remember Me</Label>
                   </div>
                   <Link to="/forgot-password" className="px-0 text-gray-600 hover:text-blue-400 font-semibold cursor-pointer text-sm">
-                    Quên mật khẩu?
+                    Forgot Password?
                   </Link>
                 </div>
               </CardContent>
@@ -147,15 +147,15 @@ export const LoginPage = () => {
                   {isLoading ? (
                     <div className="flex items-center space-x-2">
                       <div className="w-5 h-5 border-2 border-white/50 border-t-white rounded-full animate-spin"></div>
-                      <span>Đang đăng nhập...</span>
+                      <span>Sending request...</span>
                     </div>
-                  ) : "Đăng nhập"}
+                  ) : "Login"}
                 </Button>
 
                 <div className="relative w-full">
                   <div className="relative flex justify-center text-sm uppercase">
                     <span className="bg-gradient-to-r from-blue-200/20 to-cyan-200/20 px-4 py-1 text-gray-600 font-semibold rounded-full">
-                      Hoặc tiếp tục với
+                      Or continue with
                     </span>
                   </div>
                 </div>

@@ -25,7 +25,7 @@ const Header = ({ onMenuClick }: { onMenuClick: () => void }) => {
   const { user, logout } = useAuth()
 
   return (
-    <header className="sticky top-0 z-0 w-full shadow-xs bg-white backdrop-blur">
+    <header className="sticky top-0 z-0 w-full shadow-xs bg-white backdrop-blur z-10">
       <div className="container flex h-16 items-center justify-center px-4 md:px-8">
         <div className="flex items-center mr-4 sm:mr-16">
           <Button

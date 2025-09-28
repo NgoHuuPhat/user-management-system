@@ -41,8 +41,8 @@ const ForgotPasswordPage = () => {
     <div className="min-h-screen flex flex-col space-y-10 items-center justify-center bg-gradient-to-br from-blue-300 via-cyan-200 to-teal-300 p-4">
       <Card className="w-full max-w-lg bg-white/95 backdrop-blur-sm shadow-2xl rounded-2xl py-10 px-4 gap-4">
         <CardHeader className="text-center space-y-2">
-          <CardTitle className="text-3xl font-bold">Quên mật khẩu?</CardTitle>
-          <CardDescription>Không sao, chúng tôi sẽ gửi cho bạn hướng dẫn đặt lại.</CardDescription>
+          <CardTitle className="text-3xl font-bold">Forgot Password?</CardTitle>
+          <CardDescription>Don't worry, we'll send you instructions to reset it.</CardDescription>
         </CardHeader>
 
         <CardContent>
@@ -60,7 +60,7 @@ const ForgotPasswordPage = () => {
                     setEmail(e.target.value)
                     setError("")
                   }}
-                  placeholder="Nhập email của bạn"
+                  placeholder="Enter your email"
                 />
               </div>
             </div>
@@ -72,9 +72,9 @@ const ForgotPasswordPage = () => {
               {loading ? (
                 <div className="flex items-center space-x-2">
                   <div className="w-5 h-5 border-2 border-white/50 border-t-white rounded-full animate-spin"></div>
-                  <span>Đang gửi yêu cầu...</span>
+                  <span>Sending request...</span>
                 </div>
-              ) : "Gửi yêu cầu"}
+              ) : "Send Request"}
             </Button>
           </form>
           {error && (
@@ -89,7 +89,7 @@ const ForgotPasswordPage = () => {
             to="/login"
             className="text-gray-600 hover:text-blue-400 font-semibold cursor-pointer text-sm"
           >
-            Trở về Đăng nhập
+            Back to Login
           </Link>
         </CardFooter>
       </Card>

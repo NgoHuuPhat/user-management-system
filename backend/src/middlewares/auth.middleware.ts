@@ -22,7 +22,7 @@ const authenticateToken = (req: IUserRequest, res: Response, next: NextFunction)
     res.cookie('accessToken', newAccessToken, {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
-      sameSite: process.env.NODE_ENV === 'production' ? 'strict' : 'lax',
+      sameSite: 'strict',
       maxAge: 15 * 60 * 1000 
     })
     

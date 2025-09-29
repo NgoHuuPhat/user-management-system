@@ -92,7 +92,7 @@ class AdminController {
 
   async createUser(req: Request, res: Response) {
     try {
-      const { name, email, password, roleId } = req.body
+      const { name, email, password, roleId, avatar } = req.body
       const existingUser = await prisma.user.findUnique({
         where: { email }
       })
@@ -101,7 +101,7 @@ class AdminController {
       }
 
       const hashedPassword = await bcrypt.hash(password, 10)
-      const newUser: IUser = { name, email, password: hashedPassword, roleId }
+      const newUser: IUser = { name, email, password: hashedPassword, roleId: Number(roleId), active: true, avatar }
       const user = await prisma.user.create({
         data: newUser
       })
@@ -125,8 +125,8 @@ class AdminController {
         return res.status(404).json({ message: 'User not found' })
       }
 
-      const { name, password, roleId } = req.body
-      const updateData: Partial<IUser> = { name, roleId }
+      const { name, password, roleId, avatar, active } = req.body
+      const updateData: Partial<IUser> = { name, roleId: Number(roleId), avatar, active }
       if (password) {
         updateData.password = await bcrypt.hash(password, 10)
       }

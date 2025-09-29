@@ -4,6 +4,8 @@ export interface IUser {
   email: string
   password: string
   roleId: number
+  active: boolean
+  avatar?: string
 }
 
 export interface IUserPayload {

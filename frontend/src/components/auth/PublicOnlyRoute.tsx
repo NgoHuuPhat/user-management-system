@@ -8,8 +8,12 @@ const PublicOnlyRoute = ({ children }: { children: React.ReactNode }) => {
   if (loading) return null
 
   if (user?.role?.name === "admin") {
-    return <Navigate to="/" />;
+    return <Navigate to="/" />
   }
+
+  // if(user) {
+  //   return <Navigate to="/user" />
+  // }
 
   return children
 }

@@ -1,6 +1,6 @@
 import { Request, Response } from 'express'
 import { PrismaClient } from '@prisma/client'
-import { IUser } from '@/types/user'
+import { IUser, IUserRequest } from '@/types/user'
 import bcrypt from 'bcrypt'
 
 const prisma = new PrismaClient()
@@ -69,9 +69,14 @@ class AdminController {
     }
   }
 
-  async listUsers(req: Request, res: Response) {
+  async listUsers(req: IUserRequest, res: Response) {
     try {
-      const users = await prisma.user.findMany()
+      const users = await prisma.user.findMany({
+        where: {
+          id: { not: req.user?.id } 
+        },
+        include: { role: true }
+      })
       res.status(200).json(users)
     } catch (error) {
       res.status(500).json({ message: 'Internal server error' })
@@ -92,16 +97,22 @@ class AdminController {
 
   async createUser(req: Request, res: Response) {
     try {
-      const { name, email, password, roleId, avatar } = req.body
+      const { name, email, password, roleId, avatar, phone } = req.body
       const existingUser = await prisma.user.findUnique({
         where: { email }
       })
+
       if (existingUser) {
         return res.status(400).json({ message: 'Email already in use' })
       }
 
+      const phoneRegex = /^[0-9]{10,15}$/
+      if (!phoneRegex.test(phone)) {
+        return res.status(400).json({ message: 'Invalid phone number format' })
+      }
+
       const hashedPassword = await bcrypt.hash(password, 10)
-      const newUser: IUser = { name, email, password: hashedPassword, roleId: Number(roleId), active: true, avatar }
+      const newUser: IUser = { name, email, password: hashedPassword, roleId: Number(roleId), active: true, avatar, phone }
       const user = await prisma.user.create({
         data: newUser
       })
@@ -118,21 +129,33 @@ class AdminController {
   async updateUser(req: Request, res: Response) {
     try {
       const { id } = req.params
+      const { name, password, roleId, avatar, active, phone } = req.body
+
       const existingUser = await prisma.user.findUnique({
         where: { id: Number(id) }
       })
+
       if (!existingUser) {
         return res.status(404).json({ message: 'User not found' })
       }
 
-      const { name, password, roleId, avatar, active } = req.body
-      const updateData: Partial<IUser> = { name, roleId: Number(roleId), avatar, active }
+      const phoneRegex = /^[0-9]{10,15}$/
+      if (!phoneRegex.test(phone)) {
+        return res.status(400).json({ message: 'Invalid phone number format' })
+      }
+
+      const updateData: Partial<IUser> = { name, avatar, active, phone }
+      if(roleId) {
+        updateData.roleId = Number(roleId)
+      }
+
       if (password) {
         updateData.password = await bcrypt.hash(password, 10)
       }
       const user = await prisma.user.update({
         where: { id: Number(id) },
-        data: updateData
+        data: updateData,
+        include: { role: true }
       })
       const {password: _, ...userWithoutPassword} = user
 
@@ -141,6 +164,7 @@ class AdminController {
         user: userWithoutPassword
       })
     } catch (error) {
+      console.log(error)
       res.status(500).json({ message: 'Internal server error' })
     }
   }

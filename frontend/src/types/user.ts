@@ -9,6 +9,9 @@ interface IUser {
   id: number
   name: string
   email: string
+  active: boolean
+  phone: string
+  avatar?: string
   roleId: number
   createdAt: string
   updatedAt: string
@@ -22,4 +25,4 @@ interface IAuthContextType {
   logout: () => Promise<void>
 }
 
-export type { IAuthContextType, IUser }
+export type { IAuthContextType, IUser, IRole }

@@ -32,8 +32,8 @@ export const LoginPage = () => {
     }
 
     try {
-      const res = await login(email, password, rememberMe)
-      setUser(res.user)
+      const data = await login(email, password, rememberMe)
+      setUser(data.user)
     } catch (error) {
       console.error("Login error:", error)
       setError(handleError(error))

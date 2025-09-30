@@ -66,7 +66,7 @@ const Header = ({ onMenuClick }: { onMenuClick: () => void }) => {
             <DropdownMenuTrigger asChild>
               <Button variant="ghost" className="relative h-9 w-9 rounded-full">
                 <Avatar className="h-9 w-9">
-                  <AvatarImage />
+                  <AvatarImage src={user?.avatar} className="object-cover" />
                   <AvatarFallback>
                     <User className="h-4 w-4" />
                   </AvatarFallback>

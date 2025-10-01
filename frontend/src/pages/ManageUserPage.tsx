@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react"
+import { useSearchParams } from "react-router-dom"
 import AdminLayout from "@/components/layout/AdminLayout"
 import { 
   User,
@@ -53,6 +54,7 @@ import { handleError } from "@/utils/handleError"
 import { getTimeAgo } from "@/utils/date"
 
 const ManageUserPage = () => {
+  const [searchParams, setSearchParams] = useSearchParams()
   const [showPassword, setShowPassword] = useState(false)
   const [searchQuery, setSearchQuery] = useState("")
   const [roles, setRoles] = useState<IRole[]>([])
@@ -75,16 +77,22 @@ const ManageUserPage = () => {
   })
 
   useEffect(() => {
+    setSearchQuery(searchParams.get("search") || "")
+    setRoleFilter(searchParams.get("role") || "all")
+    setStatusFilter(searchParams.get("status") || "all")
+  }, [searchParams])
+
+  useEffect(() => {
     const fetchUsers = async () => {
       try {
-        const data = await getUsers()
+        const data = await getUsers(searchQuery, roleFilter, statusFilter)
         setUsers(data)
       } catch (error) {
         handleError(error)
       }
     }
     fetchUsers()
-  }, [])
+  }, [searchQuery, roleFilter, statusFilter])
 
   useEffect(() => {
     const fetchRoles = async () => {
@@ -98,6 +106,22 @@ const ManageUserPage = () => {
     fetchRoles()
   }, [])
 
+  const updateSearchParams = (newParams: { [key: string]: string }) => {
+    const params = {
+      search: searchQuery,
+      role: roleFilter,
+      status: statusFilter,
+      ...newParams
+    }
+
+    const newSearchParams = new URLSearchParams()
+    if(params.search) newSearchParams.set("search", params.search)
+    if(params.role !== "all") newSearchParams.set("role", params.role)
+    if(params.status !== "all") newSearchParams.set("status", params.status)
+
+    setSearchParams(newSearchParams)
+  }
+  
   const getUserStats = () => {
     const total = users.length
     const active = users.filter(u => u.active).length
@@ -226,6 +250,22 @@ const ManageUserPage = () => {
     }
   }
 
+  const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value
+    setSearchQuery(value)
+    updateSearchParams({ search: value })
+  }
+
+  const handleRoleFilterChange = (role: string) => {
+    setRoleFilter(role)
+    updateSearchParams({ role })
+  }
+
+  const handleStatusFilterChange = (status: string) => {
+    setStatusFilter(status)
+    updateSearchParams({ status })
+  }
+
   return (
     <AdminLayout>
       <>
@@ -275,7 +315,7 @@ const ManageUserPage = () => {
                   <Input
                     placeholder="Search users by name, email..."
                     value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
+                    onChange={handleSearchChange}
                     className="pl-10 text-sm sm:text-base"
                   />
                 </div>
@@ -288,21 +328,27 @@ const ManageUserPage = () => {
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="end" className="w-48">
                     <DropdownMenuLabel>Filter by Role</DropdownMenuLabel>
-                    {["all", "admin", "user"].map(role => (
+                    <DropdownMenuItem
+                      onClick={() => handleRoleFilterChange("all")}
+                      className={roleFilter === "all" ? "bg-blue-50" : ""}
+                    >
+                      All Roles
+                    </DropdownMenuItem>
+                    {roles.map((role) => (
                       <DropdownMenuItem
-                        key={role}
-                        onClick={() => setRoleFilter(role)}
-                        className={roleFilter === role ? "bg-blue-50" : ""}
+                        key={role.id}
+                        onClick={() => handleRoleFilterChange(role.id.toString())}
+                        className={roleFilter === role.id.toString() ? "bg-blue-50" : ""}
                       >
-                        {role === "all" ? "All Roles" : formatRoleName(role)}
+                        {formatRoleName(role.name)}
                       </DropdownMenuItem>
                     ))}
                     <DropdownMenuSeparator />
                     <DropdownMenuLabel>Filter by Status</DropdownMenuLabel>
-                    {["all", "Active", "Inactive"].map(status => (
+                    {["all", "Active", "Inactive"].map((status) => (
                       <DropdownMenuItem
                         key={status}
-                        onClick={() => setStatusFilter(status)}
+                        onClick={() => handleStatusFilterChange(status)}
                         className={statusFilter === status ? "bg-blue-50" : ""}
                       >
                         {status === "all" ? "All Statuses" : status}

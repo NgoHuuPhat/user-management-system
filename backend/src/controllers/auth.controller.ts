@@ -15,11 +15,11 @@ class AuthController {
       const { email, password, rememberMe } = req.body
       const user = await prisma.user.findUnique({ where: { email }, include: { role: true } })  
       if (!user) {
-        return res.status(401).json({ message: 'Invalid email or password' })
+        return res.status(401).json({ message: 'Email does not exist' })
       }
       const isPasswordValid = await bcrypt.compare(password, user.password)
       if (!isPasswordValid) {
-        return res.status(401).json({ message: 'Invalid email or password' })
+        return res.status(401).json({ message: 'The password you entered is incorrect' })
       }
       const payload = { id: user.id, role: user.role.name }
       const accessToken = generateAccessToken(payload)

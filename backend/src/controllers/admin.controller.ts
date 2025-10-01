@@ -71,12 +71,33 @@ class AdminController {
 
   async listUsers(req: IUserRequest, res: Response) {
     try {
+      const { role, status, search } = req.query
+      const filter: any = {}
+
+      filter.id = { not: req.user?.id }
+
+      if(role && role !== 'all') {
+        filter.roleId = Number(role)
+      }
+
+      if(status && status !== 'all') {
+        filter.active = status === 'Active'
+      }
+
+      if(search) {
+        filter.OR = [
+          { name: { contains: search } },
+          { email: { contains: search } },
+          { phone: { contains: search } }
+        ]
+      }
+
       const users = await prisma.user.findMany({
-        where: {
-          id: { not: req.user?.id } 
-        },
-        include: { role: true }
+        where: filter,
+        include: { role: true },
+        orderBy: { id: 'desc' }
       })
+
       res.status(200).json(users)
     } catch (error) {
       res.status(500).json({ message: 'Internal server error' })

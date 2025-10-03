@@ -5,7 +5,12 @@ const request = axios.create({
   withCredentials: true
 })
 
-export const getUsers = async (search: string, role: string, status: string) => {
+export const getAllUsers = async () => {
+  const res = await request.get("/admin/users")
+  return res.data
+}
+
+export const getFilteredUsers = async (search: string, role: string, status: string) => {
   const res = await request.get("/admin/users", { params: { role, status, search } })
   return res.data
 }

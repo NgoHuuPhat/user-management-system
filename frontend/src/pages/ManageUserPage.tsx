@@ -49,7 +49,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Switch } from "@/components/ui/switch"
 import { toast } from "sonner"
 import type { IUser, IRole } from "@/types/user"
-import { getUsers, createUser, updateUser, deleteUser, getRoles } from "@/services/api"
+import { getAllUsers, getFilteredUsers, createUser, updateUser, deleteUser, getRoles } from "@/services/api"
 import { handleError } from "@/utils/handleError"
 import { getTimeAgo } from "@/utils/date"
 
@@ -61,6 +61,7 @@ const ManageUserPage = () => {
   const [roleFilter, setRoleFilter] = useState<string>("all")
   const [statusFilter, setStatusFilter] = useState<string>("all")
   const [users, setUsers] = useState<IUser[]>([])
+  const [filteredUsers, setFilteredUsers] = useState<IUser[]>([])
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false)
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false)
   const [isViewDialogOpen, setIsViewDialogOpen] = useState(false)
@@ -85,13 +86,25 @@ const ManageUserPage = () => {
   useEffect(() => {
     const fetchUsers = async () => {
       try {
-        const data = await getUsers(searchQuery, roleFilter, statusFilter)
+        const data = await getAllUsers()
         setUsers(data)
       } catch (error) {
         handleError(error)
       }
     }
     fetchUsers()
+  }, [])
+
+  useEffect(() => {
+    const fetchFilteredUsers = async () => {
+      try {
+        const data = await getFilteredUsers(searchQuery, roleFilter, statusFilter)
+        setFilteredUsers(data)
+      } catch (error) {
+        handleError(error)
+      }
+    }
+    fetchFilteredUsers()
   }, [searchQuery, roleFilter, statusFilter])
 
   useEffect(() => {
@@ -200,7 +213,8 @@ const ManageUserPage = () => {
       const payload = { ...formData, roleId: Number(formData.roleId) }
       const data = await createUser(payload)
 
-      setUsers([...users, data.user])
+      setUsers(prev => [data.user, ...prev])
+      setFilteredUsers(prev => [data.user, ...prev])
       setIsAddDialogOpen(false)
       resetForm()
       toast.success(data.message)
@@ -222,7 +236,8 @@ const ManageUserPage = () => {
       const payload = { ...formData, roleId: Number(formData.roleId) }
       const data = await updateUser(selectedUser.id, payload)
 
-      setUsers(users.map(u => u.id === selectedUser.id ? data.user : u))
+      setUsers(prev => prev.map(u => u.id === selectedUser.id ? data.user : u))
+      setFilteredUsers(prev => prev.map(u => u.id === selectedUser.id ? data.user : u))
       setIsEditDialogOpen(false)
       setSelectedUser(null)
       resetForm()
@@ -240,7 +255,8 @@ const ManageUserPage = () => {
     try {
       await deleteUser(selectedUser.id)  
 
-      setUsers(users.filter(u => u.id !== selectedUser.id))
+      setUsers(prev => prev.filter(u => u.id !== selectedUser.id))
+      setFilteredUsers(prev => prev.filter(u => u.id !== selectedUser.id))
       setIsDeleteDialogOpen(false)
       setSelectedUser(null)
     } catch (error) {
@@ -362,7 +378,7 @@ const ManageUserPage = () => {
 
           {/* Mobile View */}
           <div className="lg:hidden space-y-4">
-            {users.map((user) => (
+            {filteredUsers.map((user) => (
               <Card key={user.id} className="shadow-sm shadow-blue-100/50">
                 <CardContent className="p-4">
                   <div className="flex items-start justify-between">
@@ -447,7 +463,7 @@ const ManageUserPage = () => {
                     </tr>
                   </thead>
                   <tbody>
-                    {users.map((user) => (
+                    {filteredUsers.map((user) => (
                       <tr key={user.id} className="border-b hover:bg-gray-50/50 transition-colors">
                         <td className="p-4">
                           <div className="flex items-center gap-3">
@@ -528,7 +544,7 @@ const ManageUserPage = () => {
 
           <div className="mt-6 flex flex-col sm:flex-row items-center justify-between gap-4">
             <p className="text-sm text-gray-600">
-              Showing {users.length} of {users.length} users
+              Showing {filteredUsers.length} of {filteredUsers.length} users
             </p>
             <div className="flex gap-2">
               <Button variant="outline" size="sm" disabled>

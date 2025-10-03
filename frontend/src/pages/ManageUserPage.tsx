@@ -15,7 +15,8 @@ import {
   Eye,
   Save,
   Loader2,
-  EyeOff
+  EyeOff,
+  CheckSquare
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
@@ -24,7 +25,7 @@ import { Badge } from "@/components/ui/badge"
 import { 
   DropdownMenu, 
   DropdownMenuContent, 
-  DropdownMenuItem, 
+  DropdownMenuItem,
   DropdownMenuTrigger,
   DropdownMenuLabel,
   DropdownMenuSeparator
@@ -47,9 +48,10 @@ import {
 import { Label } from "@/components/ui/label"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Switch } from "@/components/ui/switch"
+import { Checkbox } from "@/components/ui/checkbox"
 import { toast } from "sonner"
-import type { IUser, IRole } from "@/types/user"
-import { getAllUsers, getFilteredUsers, createUser, updateUser, deleteUser, getRoles } from "@/services/api"
+import type { IUser, IRole, BulkAction } from "@/types/user"
+import { getAllUsers, getFilteredUsers, createUser, updateUser, deleteUser, getRoles, bulkAction } from "@/services/api"
 import { handleError } from "@/utils/handleError"
 import { getTimeAgo } from "@/utils/date"
 
@@ -68,6 +70,7 @@ const ManageUserPage = () => {
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false)
   const [selectedUser, setSelectedUser] = useState<IUser | null>(null)
   const [submitting, setSubmitting] = useState(false)
+  const [selectedUserIds, setSelectedUserIds] = useState<number[]>([])
   const [formData, setFormData] = useState({
     name: "",
     email: "",
@@ -177,11 +180,6 @@ const ManageUserPage = () => {
     })
   }
 
-  const handleAddUser = () => {
-    resetForm()
-    setIsAddDialogOpen(true)
-  }
-
   const handleEditUser = (user: IUser) => {
     setSelectedUser(user)
     setFormData({
@@ -195,14 +193,49 @@ const ManageUserPage = () => {
     setIsEditDialogOpen(true)
   }
 
-  const handleViewUser = (user: IUser) => {
-    setSelectedUser(user)
-    setIsViewDialogOpen(true)
+  const handleSelectUser = (userId: number) => {
+    setSelectedUserIds(prev => 
+      prev.includes(userId) ? prev.filter(id => id !== userId) : [...prev, userId]
+    )
   }
 
-  const handleDeleteUser = (user: IUser) => {
-    setSelectedUser(user)
-    setIsDeleteDialogOpen(true)
+  const handleSelectAll = (checked: boolean) => {
+    setSelectedUserIds(checked ? filteredUsers.map(user => user.id) : [])
+  }
+
+  const handleBulkAction = async (action: BulkAction) => {
+    if (selectedUserIds.length === 0) {
+      toast.error("Please select at least one user")
+      return
+    }
+
+    setSubmitting(true)
+    setSelectedUserIds([])
+
+    try {
+      const data = await bulkAction(selectedUserIds, action)
+      
+      switch (action) {
+        case 'delete':
+          setUsers(prev => prev.filter(u => !selectedUserIds.includes(u.id)))
+          setFilteredUsers(prev => prev.filter(u => !selectedUserIds.includes(u.id)))
+          break
+        case 'activate':
+          setUsers(prev => prev.map(u => selectedUserIds.includes(u.id) ? { ...u, active: true } : u))
+          setFilteredUsers(prev => prev.map(u => selectedUserIds.includes(u.id) ? { ...u, active: true } : u))
+          break
+        case 'deactivate':
+          setUsers(prev => prev.map(u => selectedUserIds.includes(u.id) ? { ...u, active: false } : u))
+          setFilteredUsers(prev => prev.map(u => selectedUserIds.includes(u.id) ? { ...u, active: false } : u))
+          break
+      }
+
+      toast.success(data.message)
+    } catch (error) {
+      toast.error(handleError(error))
+    } finally {
+      setSubmitting(false)
+    }
   }
 
   const handleSubmitAdd = async (e: React.FormEvent) => {
@@ -296,10 +329,16 @@ const ManageUserPage = () => {
                   Manage and monitor all users in your system
                 </p>
               </div>
-              <Button onClick={handleAddUser} className="w-full sm:w-auto">
-                <Plus className="mr-1 h-4 w-4" />
-                Add New User
-              </Button>
+              <div className="flex gap-2">
+                <Button onClick={() => {
+                  resetForm()
+                  setIsAddDialogOpen(true)
+                }} 
+                className="w-full sm:w-auto">
+                  <Plus className="mr-1 h-4 w-4" />
+                  Add New User
+                </Button>
+              </div>
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
@@ -372,6 +411,30 @@ const ManageUserPage = () => {
                     ))}
                   </DropdownMenuContent>
                 </DropdownMenu>
+                {selectedUserIds.length > 0 && (
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button variant="outline" className="sm:w-auto">
+                        <CheckSquare className="mr-2 h-4 w-4" />
+                        Actions ({selectedUserIds.length})
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent>
+                      <DropdownMenuItem onClick={() => handleBulkAction('activate')}>
+                        Activate Selected
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => handleBulkAction('deactivate')}>
+                        Deactivate Selected
+                      </DropdownMenuItem>
+                      <DropdownMenuItem 
+                        className="text-red-600" 
+                        onClick={() => handleBulkAction('delete')}
+                      >
+                        Delete Selected
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                )}
               </div>
             </CardContent>
           </Card>
@@ -383,6 +446,10 @@ const ManageUserPage = () => {
                 <CardContent className="p-4">
                   <div className="flex items-start justify-between">
                     <div className="flex items-center gap-3">
+                      <Checkbox
+                        checked={selectedUserIds.includes(user.id)}
+                        onCheckedChange={() => handleSelectUser(user.id)}
+                      />
                       <Avatar className="h-10 w-10">
                         <AvatarImage src={user.avatar} alt={user.name} className="object-cover" />
                         <AvatarFallback className="bg-blue-100 text-blue-700">
@@ -401,7 +468,10 @@ const ManageUserPage = () => {
                         </Button>
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end">
-                        <DropdownMenuItem onClick={() => handleViewUser(user)}>
+                        <DropdownMenuItem onClick={() => {
+                          setSelectedUser(user)
+                          setIsViewDialogOpen(true)
+                        }}>
                           <Eye className="mr-2 h-4 w-4" />
                           View Details
                         </DropdownMenuItem>
@@ -409,7 +479,10 @@ const ManageUserPage = () => {
                           <Edit3 className="mr-2 h-4 w-4" />
                           Edit User
                         </DropdownMenuItem>
-                        <DropdownMenuItem className="text-red-600" onClick={() => handleDeleteUser(user)}>
+                        <DropdownMenuItem className="text-red-600" onClick={() => {
+                          setSelectedUser(user)
+                          setIsDeleteDialogOpen(true)
+                        }}>
                           <Trash2 className="mr-2 h-4 w-4" />
                           Delete User
                         </DropdownMenuItem>
@@ -454,6 +527,12 @@ const ManageUserPage = () => {
                 <table className="w-full">
                   <thead className="border-b bg-gray-50/50">
                     <tr>
+                      <th className="text-left p-4 font-medium text-gray-600 w-12">
+                        <Checkbox
+                          checked={selectedUserIds.length === filteredUsers.length && filteredUsers.length > 0}
+                          onCheckedChange={handleSelectAll}
+                        />
+                      </th>
                       <th className="text-left p-4 font-medium text-gray-600">User</th>
                       <th className="text-left p-4 font-medium text-gray-600">Contact</th>
                       <th className="text-left p-4 font-medium text-gray-600">Role</th>
@@ -465,6 +544,12 @@ const ManageUserPage = () => {
                   <tbody>
                     {filteredUsers.map((user) => (
                       <tr key={user.id} className="border-b hover:bg-gray-50/50 transition-colors">
+                        <td className="p-4">
+                          <Checkbox
+                            checked={selectedUserIds.includes(user.id)}
+                            onCheckedChange={() => handleSelectUser(user.id)}
+                          />
+                        </td>
                         <td className="p-4">
                           <div className="flex items-center gap-3">
                             <Avatar className="h-10 w-10">
@@ -519,7 +604,10 @@ const ManageUserPage = () => {
                               </Button>
                             </DropdownMenuTrigger>
                             <DropdownMenuContent align="end">
-                              <DropdownMenuItem onClick={() => handleViewUser(user)}>
+                              <DropdownMenuItem onClick={() => {
+                                setSelectedUser(user)
+                                setIsViewDialogOpen(true)
+                              }}>
                                 <Eye className="mr-2 h-4 w-4" />
                                 View Details
                               </DropdownMenuItem>
@@ -527,7 +615,10 @@ const ManageUserPage = () => {
                                 <Edit3 className="mr-2 h-4 w-4" />
                                 Edit User
                               </DropdownMenuItem>
-                              <DropdownMenuItem className="text-red-600" onClick={() => handleDeleteUser(user)}>
+                              <DropdownMenuItem className="text-red-600" onClick={() => {
+                                setSelectedUser(user)
+                                setIsDeleteDialogOpen(true)
+                              }}>
                                 <Trash2 className="mr-2 h-4 w-4" />
                                 Delete User
                               </DropdownMenuItem>
@@ -758,8 +849,11 @@ const ManageUserPage = () => {
                     <SelectValue placeholder="Select role" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="1">Admin</SelectItem>
-                    <SelectItem value="2">User</SelectItem>
+                    {roles.map(role => (
+                      <SelectItem key={role.id} value={role.id.toString()}>
+                        {formatRoleName(role.name)}
+                      </SelectItem>
+                    ))}
                   </SelectContent>
                 </Select>
               </div>

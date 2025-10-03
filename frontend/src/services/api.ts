@@ -64,3 +64,8 @@ export const getRoles = async () => {
   const res = await request.get("/admin/roles")
   return res.data
 }
+
+export const bulkAction = async (userIds: number[], action: 'activate' | 'deactivate' | 'delete') => {
+  const res = await request.post("/admin/users/bulk-action", { userIds, action })
+  return res.data
+}

@@ -15,5 +15,6 @@ router.get('/users/:id', adminController.getUserById)
 router.post('/users', upload.single('avatar'), uploadCloudinary, adminController.createUser)
 router.patch('/users/:id', upload.single('avatar'), uploadCloudinary, adminController.updateUser)
 router.delete('/users/:id', adminController.deleteUser)
+router.post('/users/bulk-action', adminController.bulkAction)
 
 export default router

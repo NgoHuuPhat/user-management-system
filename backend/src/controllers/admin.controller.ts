@@ -135,7 +135,8 @@ class AdminController {
       const hashedPassword = await bcrypt.hash(password, 10)
       const newUser: IUser = { name, email, password: hashedPassword, roleId: Number(roleId), active: true, avatar, phone }
       const user = await prisma.user.create({
-        data: newUser
+        data: newUser,
+        include: { role: true }
       })
       const { password: _, ...userWithoutPassword } = user
       res.status(201).json({
@@ -207,7 +208,42 @@ class AdminController {
       res.status(500).json({ message: 'Internal server error' })
     }
   }
-    
+
+  async bulkAction(req: Request, res: Response) {
+    try {
+      const { userIds, action } = req.body
+
+      if (!Array.isArray(userIds) || userIds.length === 0) {
+        return res.status(400).json({ message: 'No users selected' })
+      }
+      if (!['activate', 'deactivate', 'delete'].includes(action)) {
+        return res.status(400).json({ message: 'Invalid action' })
+      }
+
+      switch (action) {
+        case 'delete':
+          await prisma.user.deleteMany({
+            where: { id: { in: userIds } }
+          })
+          return res.status(200).json({ message: 'Users deleted successfully' })
+        case 'activate': 
+          await prisma.user.updateMany({
+            where: { id: { in: userIds } },
+            data: { active: true }
+          })
+          return res.status(200).json({ message: 'Users activated successfully' })
+        case 'deactivate':
+          await prisma.user.updateMany({
+            where: { id: { in: userIds } },
+            data: { active: false }
+          })
+          return res.status(200).json({ message: 'Users deactivated successfully' })
+      }
+    } catch (error) {
+      res.status(500).json({ message: 'Internal server error' })
+    }
+  }
+
 }
 
 export default new AdminController()

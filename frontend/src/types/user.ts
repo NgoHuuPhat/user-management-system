@@ -25,4 +25,7 @@ interface IAuthContextType {
   logout: () => Promise<void>
 }
 
-export type { IAuthContextType, IUser, IRole }
+type BulkAction = 'activate' | 'deactivate' | 'delete'
+
+
+export type { IAuthContextType, IUser, IRole, BulkAction }

@@ -18,6 +18,11 @@ interface IUser {
   role?: IRole
 }
 
+interface IUserCard {
+  id: number
+  active: boolean
+}
+
 interface IAuthContextType {
   user: IUser | null
   setUser: (user: IUser | null) => void
@@ -28,4 +33,4 @@ interface IAuthContextType {
 type BulkAction = 'activate' | 'deactivate' | 'delete'
 
 
-export type { IAuthContextType, IUser, IRole, BulkAction }
+export type { IAuthContextType, IUser, IUserCard, IRole, BulkAction }

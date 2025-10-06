@@ -71,20 +71,22 @@ class AdminController {
 
   async listUsers(req: IUserRequest, res: Response) {
     try {
-      const { role, status, search } = req.query
+      const { role, status, search, page = 1, limit = 5 } = req.query
       const filter: any = {}
+      const skip = (Number(page) - 1) * Number(limit)
+      const take = Number(limit)
 
       filter.id = { not: req.user?.id }
 
-      if(role && role !== 'all') {
+      if (role && role !== 'all') {
         filter.roleId = Number(role)
       }
 
-      if(status && status !== 'all') {
+      if (status && status !== 'all') {
         filter.active = status === 'Active'
       }
 
-      if(search) {
+      if (search) {
         filter.OR = [
           { name: { contains: search } },
           { email: { contains: search } },
@@ -92,13 +94,40 @@ class AdminController {
         ]
       }
 
+      const [users, total] = await Promise.all([
+        prisma.user.findMany({
+          where: filter,
+          include: { role: true },
+          orderBy: { id: 'desc' },
+          skip,
+          take
+        }),
+        prisma.user.count({ where: filter })
+      ])
+      const startIndex = skip + 1
+      const endIndex = Math.min(Number(page) * Number(limit), total)
+
+      res.status(200).json({
+        users,
+        total,
+        startIndex,
+        endIndex,
+        page: Number(page),
+        totalPages: Math.ceil(total / Number(limit))
+      })
+    } catch (error) {
+      res.status(500).json({ message: 'Internal server error' })
+    }
+  }
+
+  async listAllUsers(req: IUserRequest, res: Response) {
+    try {
       const users = await prisma.user.findMany({
-        where: filter,
-        include: { role: true },
+        where: { NOT: { id: req.user?.id } },
+        select: { id: true, active: true },
         orderBy: { id: 'desc' }
       })
-
-      res.status(200).json(users)
+      res.status(200).json({ users })
     } catch (error) {
       res.status(500).json({ message: 'Internal server error' })
     }

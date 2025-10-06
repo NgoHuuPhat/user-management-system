@@ -6,12 +6,12 @@ const request = axios.create({
 })
 
 export const getAllUsers = async () => {
-  const res = await request.get("/admin/users")
+  const res = await request.get("/admin/users/all")
   return res.data
 }
 
-export const getFilteredUsers = async (search: string, role: string, status: string) => {
-  const res = await request.get("/admin/users", { params: { role, status, search } })
+export const getFilteredUsers = async (search: string, role: string, status: string, page: number, limit: number) => {
+  const res = await request.get("/admin/users", { params: { role, status, search, page, limit } })
   return res.data
 }
 

@@ -37,6 +37,7 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
+  DialogClose,
 } from "@/components/ui/dialog"
 import {
   Select,
@@ -45,12 +46,21 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
+import {
+  Pagination,
+  PaginationContent,
+  PaginationItem,
+  PaginationLink,
+  PaginationNext,
+  PaginationPrevious,
+  PaginationEllipsis
+} from "@/components/ui/pagination"
 import { Label } from "@/components/ui/label"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Switch } from "@/components/ui/switch"
 import { Checkbox } from "@/components/ui/checkbox"
 import { toast } from "sonner"
-import type { IUser, IRole, BulkAction } from "@/types/user"
+import type { IUser, IUserCard, IRole, BulkAction } from "@/types/user"
 import { getAllUsers, getFilteredUsers, createUser, updateUser, deleteUser, getRoles, bulkAction } from "@/services/api"
 import { handleError } from "@/utils/handleError"
 import { getTimeAgo } from "@/utils/date"
@@ -62,7 +72,8 @@ const ManageUserPage = () => {
   const [roles, setRoles] = useState<IRole[]>([])
   const [roleFilter, setRoleFilter] = useState<string>("all")
   const [statusFilter, setStatusFilter] = useState<string>("all")
-  const [users, setUsers] = useState<IUser[]>([])
+  const [users, setUsers] = useState<IUserCard[]>([])
+  const [loading, setLoading] = useState(true)
   const [filteredUsers, setFilteredUsers] = useState<IUser[]>([])
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false)
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false)
@@ -71,6 +82,12 @@ const ManageUserPage = () => {
   const [selectedUser, setSelectedUser] = useState<IUser | null>(null)
   const [submitting, setSubmitting] = useState(false)
   const [selectedUserIds, setSelectedUserIds] = useState<number[]>([])
+  const [currentPage, setCurrentPage] = useState(1)
+  const [totalPages, setTotalPages] = useState(1)
+  const [totalUsers, setTotalUsers] = useState(0)
+  const [startIndex, setStartIndex] = useState(0)
+  const [endIndex, setEndIndex] = useState(0)
+  const [limit] = useState(5)
   const [formData, setFormData] = useState({
     name: "",
     email: "",
@@ -84,15 +101,20 @@ const ManageUserPage = () => {
     setSearchQuery(searchParams.get("search") || "")
     setRoleFilter(searchParams.get("role") || "all")
     setStatusFilter(searchParams.get("status") || "all")
+    setCurrentPage(Number(searchParams.get("page")) || 1)
   }, [searchParams])
 
   useEffect(() => {
     const fetchUsers = async () => {
       try {
         const data = await getAllUsers()
-        setUsers(data)
+        await new Promise(resolve => setTimeout(resolve, 300)) 
+
+        setUsers(data.users)
       } catch (error) {
         handleError(error)
+      } finally {
+        setLoading(false)
       }
     }
     fetchUsers()
@@ -101,14 +123,19 @@ const ManageUserPage = () => {
   useEffect(() => {
     const fetchFilteredUsers = async () => {
       try {
-        const data = await getFilteredUsers(searchQuery, roleFilter, statusFilter)
-        setFilteredUsers(data)
+        const data = await getFilteredUsers(searchQuery, roleFilter, statusFilter, currentPage, limit)
+        setFilteredUsers(data.users)
+
+        setTotalPages(data.totalPages)
+        setTotalUsers(data.total)
+        setStartIndex(data.startIndex)
+        setEndIndex(data.endIndex)
       } catch (error) {
         handleError(error)
       }
     }
     fetchFilteredUsers()
-  }, [searchQuery, roleFilter, statusFilter])
+  }, [searchQuery, roleFilter, statusFilter, currentPage, limit])
 
   useEffect(() => {
     const fetchRoles = async () => {
@@ -122,11 +149,12 @@ const ManageUserPage = () => {
     fetchRoles()
   }, [])
 
-  const updateSearchParams = (newParams: { [key: string]: string }) => {
+  const updateSearchParams = (newParams: { [key: string]: string | number }) => {
     const params = {
       search: searchQuery,
       role: roleFilter,
       status: statusFilter,
+      page: currentPage.toString(),
       ...newParams
     }
 
@@ -134,6 +162,7 @@ const ManageUserPage = () => {
     if(params.search) newSearchParams.set("search", params.search)
     if(params.role !== "all") newSearchParams.set("role", params.role)
     if(params.status !== "all") newSearchParams.set("status", params.status)
+    if(params.page) newSearchParams.set("page", params.page.toString())
 
     setSearchParams(newSearchParams)
   }
@@ -217,6 +246,9 @@ const ManageUserPage = () => {
       
       switch (action) {
         case 'delete':
+          setTotalUsers(prev => prev - selectedUserIds.length)
+          setTotalPages(Math.ceil((totalUsers - selectedUserIds.length) / limit))
+
           setUsers(prev => prev.filter(u => !selectedUserIds.includes(u.id)))
           setFilteredUsers(prev => prev.filter(u => !selectedUserIds.includes(u.id)))
           break
@@ -245,6 +277,9 @@ const ManageUserPage = () => {
     try {
       const payload = { ...formData, roleId: Number(formData.roleId) }
       const data = await createUser(payload)
+      
+      setTotalUsers(prev => prev + 1)
+      setTotalPages(Math.ceil((totalUsers + 1) / limit))
 
       setUsers(prev => [data.user, ...prev])
       setFilteredUsers(prev => [data.user, ...prev])
@@ -253,7 +288,6 @@ const ManageUserPage = () => {
       toast.success(data.message)
     } catch (error) {
       toast.error(handleError(error))
-      console.error(handleError(error))
     } finally {
       setSubmitting(false)
     }
@@ -274,8 +308,9 @@ const ManageUserPage = () => {
       setIsEditDialogOpen(false)
       setSelectedUser(null)
       resetForm()
+      toast.success(data.message)
     } catch (error) {
-      console.error(handleError(error))
+      toast.error(handleError(error))
     } finally {
       setSubmitting(false)
     }
@@ -286,14 +321,18 @@ const ManageUserPage = () => {
     setSubmitting(true)
 
     try {
-      await deleteUser(selectedUser.id)  
+      const data = await deleteUser(selectedUser.id)  
+
+      setTotalUsers(prev => prev - 1)
+      setTotalPages(Math.ceil((totalUsers - 1) / limit))
 
       setUsers(prev => prev.filter(u => u.id !== selectedUser.id))
       setFilteredUsers(prev => prev.filter(u => u.id !== selectedUser.id))
       setIsDeleteDialogOpen(false)
       setSelectedUser(null)
+      toast.success(data.message)
     } catch (error) {
-      console.error(handleError(error))
+      toast.error(handleError(error))
     } finally {
       setSubmitting(false)
     }
@@ -302,17 +341,117 @@ const ManageUserPage = () => {
   const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value
     setSearchQuery(value)
-    updateSearchParams({ search: value })
+    setCurrentPage(1)
+    updateSearchParams({ search: value, page: 1 })
   }
 
   const handleRoleFilterChange = (role: string) => {
     setRoleFilter(role)
-    updateSearchParams({ role })
+    setCurrentPage(1)
+    updateSearchParams({ role, page: 1 })
   }
 
   const handleStatusFilterChange = (status: string) => {
     setStatusFilter(status)
-    updateSearchParams({ status })
+    setCurrentPage(1)
+    updateSearchParams({ status, page: 1 })
+  }
+
+  const handlePageChange = (page: number) => {
+    setCurrentPage(page)
+    updateSearchParams({ page })
+  }
+
+  const renderPaginationItems = () => {
+    const items = []
+    const maxVisible = 5
+    
+    if (totalPages <= maxVisible) {
+      for (let i = 1; i <= totalPages; i++) {
+        items.push(
+          <PaginationItem key={i}>
+            <PaginationLink 
+              href="#" 
+              isActive={currentPage === i}
+              onClick={(e) => {
+                e.preventDefault()
+                handlePageChange(i)
+              }}
+            >
+              {i}
+            </PaginationLink>
+          </PaginationItem>
+        )
+      }
+    } else {
+      items.push(
+        <PaginationItem key={1}>
+          <PaginationLink 
+            href="#" 
+            isActive={currentPage === 1}
+            onClick={(e) => {
+              e.preventDefault()
+              handlePageChange(1)
+            }}
+          >
+            1
+          </PaginationLink>
+        </PaginationItem>
+      )
+
+      if (currentPage > 3) {
+        items.push(
+          <PaginationItem key="ellipsis-start">
+            <PaginationEllipsis />
+          </PaginationItem>
+        )
+      }
+
+      const start = Math.max(2, currentPage - 1)
+      const end = Math.min(totalPages - 1, currentPage + 1)
+
+      for (let i = start; i <= end; i++) {
+        items.push(
+          <PaginationItem key={i}>
+            <PaginationLink 
+              href="#" 
+              isActive={currentPage === i}
+              onClick={(e) => {
+                e.preventDefault()
+                handlePageChange(i)
+              }}
+            >
+              {i}
+            </PaginationLink>
+          </PaginationItem>
+        )
+      }
+
+      if (currentPage < totalPages - 2) {
+        items.push(
+          <PaginationItem key="ellipsis-end">
+            <PaginationEllipsis />
+          </PaginationItem>
+        )
+      }
+
+      items.push(
+        <PaginationItem key={totalPages}>
+          <PaginationLink 
+            href="#" 
+            isActive={currentPage === totalPages}
+            onClick={(e) => {
+              e.preventDefault()
+              handlePageChange(totalPages)
+            }}
+          >
+            {totalPages}
+          </PaginationLink>
+        </PaginationItem>
+      )
+    }
+
+    return items
   }
 
   return (
@@ -323,7 +462,7 @@ const ManageUserPage = () => {
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-6 gap-4">
               <div>
                 <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">
-                  User Management 👥
+                  User Management
                 </h1>
                 <p className="mt-2 text-sm sm:text-base text-gray-600">
                   Manage and monitor all users in your system
@@ -352,7 +491,9 @@ const ManageUserPage = () => {
                     <div className="flex items-center justify-between">
                       <div>
                         <p className="text-xs sm:text-sm font-medium text-gray-600">{card.title}</p>
-                        <p className="text-xl sm:text-2xl font-bold">{card.value}</p>
+                        { loading ? (<Loader2 className="mt-2 h-4 w-4 animate-spin" />) : (
+                          <p className="text-2xl sm:text-3xl font-bold">{card.value}</p>
+                        )}
                       </div>
                       <div className="text-xl sm:text-2xl">{card.icon}</div>
                     </div>
@@ -360,7 +501,7 @@ const ManageUserPage = () => {
                 </Card>
               ))}
             </div>
-          </div>
+        </div>
 
           <Card className="mb-6 shadow-sm shadow-blue-100/50">
             <CardContent className="p-4 sm:p-6">
@@ -634,20 +775,43 @@ const ManageUserPage = () => {
           </Card>
 
           <div className="mt-6 flex flex-col sm:flex-row items-center justify-between gap-4">
-            <p className="text-sm text-gray-600">
-              Showing {filteredUsers.length} of {filteredUsers.length} users
+            <p
+              className={`text-sm text-gray-600 sm:order-1 ${totalUsers === 0 ? 'text-center w-full' : ''}`}
+            >
+              {totalUsers > 0
+                ? `Showing ${startIndex} to ${endIndex} of ${totalUsers} users (Page ${currentPage} of ${totalPages})`
+                : 'No users found.'}
             </p>
-            <div className="flex gap-2">
-              <Button variant="outline" size="sm" disabled>
-                Previous
-              </Button>
-              <Button variant="link" size="sm" className="bg-blue-50 text-blue-600">
-                1
-              </Button>
-              <Button variant="outline" size="sm" disabled>
-                Next
-              </Button>
-            </div>
+
+            {totalPages >= 1 && (
+              <div className="w-full sm:w-auto sm:order-2 flex justify-end">
+                <Pagination>
+                  <PaginationContent>
+                    <PaginationItem>
+                      <PaginationPrevious 
+                        href="#" 
+                        onClick={(e) => {
+                          e.preventDefault()
+                          if (currentPage > 1) handlePageChange(currentPage - 1)
+                        }}
+                        className={currentPage === 1 ? 'pointer-events-none opacity-50' : ''}
+                      />
+                    </PaginationItem>
+                    {renderPaginationItems()}
+                    <PaginationItem>
+                      <PaginationNext 
+                        href="#" 
+                        onClick={(e) => {
+                          e.preventDefault()
+                          if (currentPage < totalPages) handlePageChange(currentPage + 1)
+                        }}
+                        className={currentPage === totalPages ? 'pointer-events-none opacity-50' : ''}
+                      />
+                    </PaginationItem>
+                  </PaginationContent>
+                </Pagination>
+              </div>
+            )}
           </div>
         </div>
       </>
@@ -747,14 +911,17 @@ const ManageUserPage = () => {
                 <Switch
                   id="active"
                   checked={formData.active}
+                  disabled
                   onCheckedChange={(checked) => setFormData({ ...formData, active: checked })}
                 />
               </div>
             </div>
             <DialogFooter>
-              <Button type="button" variant="outline" onClick={() => setIsAddDialogOpen(false)} disabled={submitting}>
-                Cancel
-              </Button>
+              <DialogClose asChild>
+                <Button variant="outline" disabled={submitting}>
+                  Cancel
+                </Button>
+              </DialogClose>
               <Button type="submit" disabled={submitting}>
                 {submitting ? (
                   <>
@@ -959,9 +1126,11 @@ const ManageUserPage = () => {
             </div>
           )}
           <DialogFooter>
-            <Button variant="outline" onClick={() => setIsViewDialogOpen(false)}>
-              Close
-            </Button>
+            <DialogClose asChild>
+              <Button variant="outline">
+                Close
+              </Button>
+            </DialogClose>
             {selectedUser && (
               <Button onClick={() => {
                 setIsViewDialogOpen(false)
@@ -1000,9 +1169,11 @@ const ManageUserPage = () => {
             </div>
           )}
           <DialogFooter>
-            <Button variant="outline" onClick={() => setIsDeleteDialogOpen(false)} disabled={submitting}>
-              Cancel
-            </Button>
+            <DialogClose asChild>
+              <Button variant="outline" disabled={submitting}>
+                Cancel
+              </Button>
+            </DialogClose>
             <Button variant="destructive" onClick={handleConfirmDelete} disabled={submitting}>
               {submitting ? (
                 <>

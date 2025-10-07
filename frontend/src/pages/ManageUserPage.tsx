@@ -110,7 +110,7 @@ const ManageUserPage = () => {
         const data = await getAllUsers()
         await new Promise(resolve => setTimeout(resolve, 300)) 
 
-        setUsers(data.users)
+        setUsers(data.allUsers)
       } catch (error) {
         handleError(error)
       } finally {

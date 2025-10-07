@@ -6,7 +6,7 @@ const request = axios.create({
 })
 
 export const getAllUsers = async () => {
-  const res = await request.get("/admin/users/all")
+  const res = await request.get("/admin/users")
   return res.data
 }
 

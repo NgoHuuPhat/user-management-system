@@ -11,7 +11,6 @@ router.patch('/roles/:id', adminController.updateRole)
 router.delete('/roles/:id', adminController.deleteRole)
 
 router.get('/users', adminController.listUsers)
-router.get('/users/all', adminController.listAllUsers)
 router.get('/users/:id', adminController.getUserById)
 router.post('/users', upload.single('avatar'), uploadCloudinary, adminController.createUser)
 router.patch('/users/:id', upload.single('avatar'), uploadCloudinary, adminController.updateUser)

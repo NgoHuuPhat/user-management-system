@@ -94,7 +94,7 @@ class AdminController {
         ]
       }
 
-      const [users, total] = await Promise.all([
+      const [users, allUsers, total] = await Promise.all([
         prisma.user.findMany({
           where: filter,
           include: { role: true },
@@ -102,6 +102,7 @@ class AdminController {
           skip,
           take
         }),
+        prisma.user.findMany({ where: { NOT: { id: req.user?.id } }, select: { id: true, active: true } }),
         prisma.user.count({ where: filter })
       ])
       const startIndex = skip + 1
@@ -109,25 +110,13 @@ class AdminController {
 
       res.status(200).json({
         users,
+        allUsers,
         total,
         startIndex,
         endIndex,
         page: Number(page),
         totalPages: Math.ceil(total / Number(limit))
       })
-    } catch (error) {
-      res.status(500).json({ message: 'Internal server error' })
-    }
-  }
-
-  async listAllUsers(req: IUserRequest, res: Response) {
-    try {
-      const users = await prisma.user.findMany({
-        where: { NOT: { id: req.user?.id } },
-        select: { id: true, active: true },
-        orderBy: { id: 'desc' }
-      })
-      res.status(200).json({ users })
     } catch (error) {
       res.status(500).json({ message: 'Internal server error' })
     }

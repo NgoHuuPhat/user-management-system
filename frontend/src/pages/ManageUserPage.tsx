@@ -16,7 +16,10 @@ import {
   Save,
   Loader2,
   EyeOff,
-  CheckSquare
+  CheckSquare,
+  ArrowUpDown,
+  ArrowDownWideNarrow,
+  ArrowDownNarrowWide
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
@@ -26,9 +29,9 @@ import {
   DropdownMenu, 
   DropdownMenuContent, 
   DropdownMenuItem,
-  DropdownMenuTrigger,
   DropdownMenuLabel,
-  DropdownMenuSeparator
+  DropdownMenuSeparator,
+  DropdownMenuTrigger
 } from "@/components/ui/dropdown-menu"
 import {
   Dialog,
@@ -67,11 +70,15 @@ import { getTimeAgo } from "@/utils/date"
 
 const ManageUserPage = () => {
   const [searchParams, setSearchParams] = useSearchParams()
+  const hasSortField = searchParams.has("sortField")
+  
   const [showPassword, setShowPassword] = useState(false)
   const [searchQuery, setSearchQuery] = useState("")
   const [roles, setRoles] = useState<IRole[]>([])
   const [roleFilter, setRoleFilter] = useState<string>("all")
   const [statusFilter, setStatusFilter] = useState<string>("all")
+  const [sortField, setSortField] = useState<string>("id")
+  const [sortOrder, setSortOrder] = useState<string>("desc")
   const [users, setUsers] = useState<IUserCard[]>([])
   const [loading, setLoading] = useState(true)
   const [filteredUsers, setFilteredUsers] = useState<IUser[]>([])
@@ -101,6 +108,8 @@ const ManageUserPage = () => {
     setSearchQuery(searchParams.get("search") || "")
     setRoleFilter(searchParams.get("role") || "all")
     setStatusFilter(searchParams.get("status") || "all")
+    setSortField(searchParams.get("sortField") || "id")
+    setSortOrder(searchParams.get("sortOrder") || "desc")
     setCurrentPage(Number(searchParams.get("page")) || 1)
   }, [searchParams])
 
@@ -123,9 +132,8 @@ const ManageUserPage = () => {
   useEffect(() => {
     const fetchFilteredUsers = async () => {
       try {
-        const data = await getFilteredUsers(searchQuery, roleFilter, statusFilter, currentPage, limit)
+        const data = await getFilteredUsers(searchQuery, roleFilter, statusFilter, currentPage, limit, sortField, sortOrder)
         setFilteredUsers(data.users)
-
         setTotalPages(data.totalPages)
         setTotalUsers(data.total)
         setStartIndex(data.startIndex)
@@ -135,7 +143,7 @@ const ManageUserPage = () => {
       }
     }
     fetchFilteredUsers()
-  }, [searchQuery, roleFilter, statusFilter, currentPage, limit])
+  }, [searchQuery, roleFilter, statusFilter, currentPage, limit, sortField, sortOrder])
 
   useEffect(() => {
     const fetchRoles = async () => {
@@ -154,7 +162,9 @@ const ManageUserPage = () => {
       search: searchQuery,
       role: roleFilter,
       status: statusFilter,
-      page: currentPage.toString(),
+      sortField,
+      sortOrder,
+      page: currentPage,
       ...newParams
     }
 
@@ -162,7 +172,9 @@ const ManageUserPage = () => {
     if(params.search) newSearchParams.set("search", params.search)
     if(params.role !== "all") newSearchParams.set("role", params.role)
     if(params.status !== "all") newSearchParams.set("status", params.status)
-    if(params.page) newSearchParams.set("page", params.page.toString())
+    if(params.sortField) newSearchParams.set("sortField", params.sortField)
+    if(params.sortOrder) newSearchParams.set("sortOrder", params.sortOrder)
+    if (params.page) newSearchParams.set("page", params.page.toString())
 
     setSearchParams(newSearchParams)
   }
@@ -355,6 +367,14 @@ const ManageUserPage = () => {
     setStatusFilter(status)
     setCurrentPage(1)
     updateSearchParams({ status, page: 1 })
+  }
+
+  const handleSortChange = (field: string) => {
+    const newSortOrder = sortField === field && sortOrder === "asc" ? "desc" : "asc"
+    setSortField(field)
+    setSortOrder(newSortOrder)
+    setCurrentPage(1)
+    updateSearchParams({ sortField: field, sortOrder: newSortOrder, page: 1 })
   }
 
   const handlePageChange = (page: number) => {
@@ -674,12 +694,70 @@ const ManageUserPage = () => {
                           onCheckedChange={handleSelectAll}
                         />
                       </th>
-                      <th className="text-left p-4 font-medium text-gray-600">User</th>
-                      <th className="text-left p-4 font-medium text-gray-600">Contact</th>
-                      <th className="text-left p-4 font-medium text-gray-600">Role</th>
-                      <th className="text-left p-4 font-medium text-gray-600">Status</th>
-                      <th className="text-left p-4 font-medium text-gray-600">Joined</th>
-                      <th className="text-left p-4 font-medium text-gray-600">Actions</th>
+                      <th className="text-left p-2 font-medium text-gray-600">
+                        <Button
+                          variant="ghost"
+                          onClick={() => handleSortChange('id')}
+                          className="flex items-center gap-2"
+                        >
+                          ID
+                          { hasSortField && sortField === 'id' && (
+                            sortOrder === 'asc' ? (
+                              <ArrowDownNarrowWide className="h-4 w-4" />
+                            ) : (
+                              <ArrowDownWideNarrow className="h-4 w-4" />
+                            ) 
+                          )}
+                        </Button>
+                      </th>
+                      <th className="text-left p-4 font-medium text-gray-600">
+                        <Button
+                          variant="ghost"
+                          onClick={() => handleSortChange('name')}
+                          className="flex items-center gap-2"
+                        >
+                          Name
+                          {sortField === 'name' && (
+                            sortOrder === 'asc' ? (
+                              <ArrowDownNarrowWide className="h-4 w-4" />
+                            ) : (
+                              <ArrowDownWideNarrow className="h-4 w-4" />
+                            ) 
+                          )}
+                        </Button>
+                      </th>
+                      <th className="text-left p-4 font-medium text-gray-600">
+                        <Button
+                          variant="ghost"
+                          onClick={() => handleSortChange('email')}
+                          className="flex items-center gap-2"
+                        >
+                          Email
+                          {sortField === 'email' && (
+                            sortOrder === 'asc' ? (
+                              <ArrowDownNarrowWide className="h-4 w-4" />
+                            ) : (
+                              <ArrowDownWideNarrow className="h-4 w-4" />
+                            ) 
+                          )}
+                        </Button>
+                      </th>
+                      <th className="text-left p-4 text-sm font-medium text-gray-600">
+                          Phone
+                      </th>
+                      <th className="text-left p-4 text-sm font-medium text-gray-600">
+                          Role
+                      </th>
+                      <th className="text-left p-4 text-sm font-medium text-gray-600">
+                          Status
+                      </th>
+                      <th className="text-left p-4 text-sm font-medium text-gray-600">
+                        <Button variant="ghost" onClick={() => handleSortChange('createdAt')} className="flex items-center gap-2">
+                          Joined
+                          {sortField === 'createdAt' && <ArrowUpDown className={`h-4 w-4 ${sortOrder === 'asc' ? 'rotate-180' : ''}`} />}
+                        </Button>
+                      </th>
+                      <th className="text-left p-4 text-sm font-medium text-gray-600">Actions</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -692,6 +770,9 @@ const ManageUserPage = () => {
                           />
                         </td>
                         <td className="p-4">
+                          <p className="text-sm text-gray-500">{user.id}</p>
+                        </td>
+                        <td className="p-4">
                           <div className="flex items-center gap-3">
                             <Avatar className="h-10 w-10">
                               <AvatarImage src={user.avatar} alt={user.name} className="object-cover" />
@@ -699,25 +780,22 @@ const ManageUserPage = () => {
                                 <User className="h-4 w-4" />
                               </AvatarFallback>
                             </Avatar>
-                            <div>
-                              <p className="font-medium text-gray-900">{user.name}</p>
-                              <p className="text-sm text-gray-500">ID: {user.id}</p>
-                            </div>
+                            <p className="font-medium text-gray-900">{user.name}</p>
                           </div>
                         </td>
                         <td className="p-4">
-                          <div className="space-y-1">
-                            <div className="flex items-center gap-2 text-sm">
-                              <Mail className="h-3 w-3 text-gray-400" />
-                              <span>{user.email}</span>
-                            </div>
-                            {user.phone && (
-                              <div className="flex items-center gap-2 text-sm text-gray-500">
-                                <Phone className="h-3 w-3 text-gray-400" />
-                                <span>{user.phone}</span>
-                              </div>
-                            )}
+                          <div className="flex items-center gap-2 text-sm">
+                            <Mail className="h-3 w-3 text-gray-400" />
+                            <span>{user.email}</span>
                           </div>
+                        </td>
+                        <td className="p-4">
+                          {user.phone && (
+                            <div className="flex items-center gap-2 text-sm text-gray-500">
+                              <Phone className="h-3 w-3 text-gray-400" />
+                              <span>{user.phone}</span>
+                            </div>
+                          )}
                         </td>
                         <td className="p-4">
                           <Badge className={getRoleColor(user.role?.name)}>

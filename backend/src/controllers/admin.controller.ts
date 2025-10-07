@@ -71,10 +71,11 @@ class AdminController {
 
   async listUsers(req: IUserRequest, res: Response) {
     try {
-      const { role, status, search, page = 1, limit = 5 } = req.query
+      const { role, status, search, page = 1, limit = 5, sortField = 'id', sortOrder = 'desc' } = req.query
       const filter: any = {}
       const skip = (Number(page) - 1) * Number(limit)
       const take = Number(limit)
+      const sortFields = (sortField as string) || 'id'
 
       filter.id = { not: req.user?.id }
 
@@ -98,7 +99,7 @@ class AdminController {
         prisma.user.findMany({
           where: filter,
           include: { role: true },
-          orderBy: { id: 'desc' },
+          orderBy: { [sortFields]: sortOrder },
           skip,
           take
         }),
@@ -118,6 +119,7 @@ class AdminController {
         totalPages: Math.ceil(total / Number(limit))
       })
     } catch (error) {
+      console.log(error)
       res.status(500).json({ message: 'Internal server error' })
     }
   }

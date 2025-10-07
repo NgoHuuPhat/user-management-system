@@ -10,8 +10,8 @@ export const getAllUsers = async () => {
   return res.data
 }
 
-export const getFilteredUsers = async (search: string, role: string, status: string, page: number, limit: number) => {
-  const res = await request.get("/admin/users", { params: { role, status, search, page, limit } })
+export const getFilteredUsers = async (search: string, role: string, status: string, page: number, limit: number, sortField: string, sortOrder: string) => {
+  const res = await request.get("/admin/users", { params: { role, status, search, page, limit, sortField, sortOrder } })
   return res.data
 }
 

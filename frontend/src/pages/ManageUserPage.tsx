@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react"
-import { useSearchParams } from "react-router-dom"
 import AdminLayout from "@/components/layout/AdminLayout"
+import SortableHeader from "@/components/common/SortableHeader"
+import PaginationBar from "@/components/common/PaginationBar"
 import { 
   User,
   Search,
@@ -17,9 +18,6 @@ import {
   Loader2,
   EyeOff,
   CheckSquare,
-  ArrowUpDown,
-  ArrowDownWideNarrow,
-  ArrowDownNarrowWide
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
@@ -49,36 +47,21 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
-import {
-  Pagination,
-  PaginationContent,
-  PaginationItem,
-  PaginationLink,
-  PaginationNext,
-  PaginationPrevious,
-  PaginationEllipsis
-} from "@/components/ui/pagination"
 import { Label } from "@/components/ui/label"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Switch } from "@/components/ui/switch"
 import { Checkbox } from "@/components/ui/checkbox"
 import { toast } from "sonner"
-import type { IUser, IUserCard, IRole, BulkAction } from "@/types/user"
+import type { IUser, IUserCard, BulkAction } from "@/types/user"
+import type { IRole } from "@/types/role"
 import { getAllUsers, getFilteredUsers, createUser, updateUser, deleteUser, getRoles, bulkAction } from "@/services/api"
 import { handleError } from "@/utils/handleError"
 import { getTimeAgo } from "@/utils/date"
+import { useTableParams } from "@/hooks/useTableParams"
 
 const ManageUserPage = () => {
-  const [searchParams, setSearchParams] = useSearchParams()
-  const hasSortField = searchParams.has("sortField")
-  
   const [showPassword, setShowPassword] = useState(false)
-  const [searchQuery, setSearchQuery] = useState("")
   const [roles, setRoles] = useState<IRole[]>([])
-  const [roleFilter, setRoleFilter] = useState<string>("all")
-  const [statusFilter, setStatusFilter] = useState<string>("all")
-  const [sortField, setSortField] = useState<string>("id")
-  const [sortOrder, setSortOrder] = useState<string>("desc")
   const [users, setUsers] = useState<IUserCard[]>([])
   const [loading, setLoading] = useState(true)
   const [filteredUsers, setFilteredUsers] = useState<IUser[]>([])
@@ -89,7 +72,6 @@ const ManageUserPage = () => {
   const [selectedUser, setSelectedUser] = useState<IUser | null>(null)
   const [submitting, setSubmitting] = useState(false)
   const [selectedUserIds, setSelectedUserIds] = useState<number[]>([])
-  const [currentPage, setCurrentPage] = useState(1)
   const [totalPages, setTotalPages] = useState(1)
   const [totalUsers, setTotalUsers] = useState(0)
   const [startIndex, setStartIndex] = useState(0)
@@ -104,14 +86,21 @@ const ManageUserPage = () => {
     active: true
   })
 
-  useEffect(() => {
-    setSearchQuery(searchParams.get("search") || "")
-    setRoleFilter(searchParams.get("role") || "all")
-    setStatusFilter(searchParams.get("status") || "all")
-    setSortField(searchParams.get("sortField") || "id")
-    setSortOrder(searchParams.get("sortOrder") || "desc")
-    setCurrentPage(Number(searchParams.get("page")) || 1)
-  }, [searchParams])
+  const {
+    searchQuery,
+    roleFilter,
+    statusFilter,
+    sortField,
+    sortOrder,
+    currentPage,
+    setSearchQuery,
+    setRoleFilter,
+    setStatusFilter,
+    setSortField,
+    setSortOrder,
+    setCurrentPage,
+    updateParams,
+  } = useTableParams()
 
   useEffect(() => {
     const fetchUsers = async () => {
@@ -156,28 +145,6 @@ const ManageUserPage = () => {
     }
     fetchRoles()
   }, [])
-
-  const updateSearchParams = (newParams: { [key: string]: string | number }) => {
-    const params = {
-      search: searchQuery,
-      role: roleFilter,
-      status: statusFilter,
-      sortField,
-      sortOrder,
-      page: currentPage,
-      ...newParams
-    }
-
-    const newSearchParams = new URLSearchParams()
-    if(params.search) newSearchParams.set("search", params.search)
-    if(params.role !== "all") newSearchParams.set("role", params.role)
-    if(params.status !== "all") newSearchParams.set("status", params.status)
-    if(params.sortField) newSearchParams.set("sortField", params.sortField)
-    if(params.sortOrder) newSearchParams.set("sortOrder", params.sortOrder)
-    if (params.page) newSearchParams.set("page", params.page.toString())
-
-    setSearchParams(newSearchParams)
-  }
   
   const getUserStats = () => {
     const total = users.length
@@ -354,19 +321,19 @@ const ManageUserPage = () => {
     const value = e.target.value
     setSearchQuery(value)
     setCurrentPage(1)
-    updateSearchParams({ search: value, page: 1 })
+    updateParams({ search: value, page: 1 })
   }
 
   const handleRoleFilterChange = (role: string) => {
     setRoleFilter(role)
     setCurrentPage(1)
-    updateSearchParams({ role, page: 1 })
+    updateParams({ role, page: 1 })
   }
 
   const handleStatusFilterChange = (status: string) => {
     setStatusFilter(status)
     setCurrentPage(1)
-    updateSearchParams({ status, page: 1 })
+    updateParams({ status, page: 1 })
   }
 
   const handleSortChange = (field: string) => {
@@ -374,104 +341,12 @@ const ManageUserPage = () => {
     setSortField(field)
     setSortOrder(newSortOrder)
     setCurrentPage(1)
-    updateSearchParams({ sortField: field, sortOrder: newSortOrder, page: 1 })
+    updateParams({ sortField: field, sortOrder: newSortOrder, page: 1 })
   }
 
   const handlePageChange = (page: number) => {
     setCurrentPage(page)
-    updateSearchParams({ page })
-  }
-
-  const renderPaginationItems = () => {
-    const items = []
-    const maxVisible = 5
-    
-    if (totalPages <= maxVisible) {
-      for (let i = 1; i <= totalPages; i++) {
-        items.push(
-          <PaginationItem key={i}>
-            <PaginationLink 
-              href="#" 
-              isActive={currentPage === i}
-              onClick={(e) => {
-                e.preventDefault()
-                handlePageChange(i)
-              }}
-            >
-              {i}
-            </PaginationLink>
-          </PaginationItem>
-        )
-      }
-    } else {
-      items.push(
-        <PaginationItem key={1}>
-          <PaginationLink 
-            href="#" 
-            isActive={currentPage === 1}
-            onClick={(e) => {
-              e.preventDefault()
-              handlePageChange(1)
-            }}
-          >
-            1
-          </PaginationLink>
-        </PaginationItem>
-      )
-
-      if (currentPage > 3) {
-        items.push(
-          <PaginationItem key="ellipsis-start">
-            <PaginationEllipsis />
-          </PaginationItem>
-        )
-      }
-
-      const start = Math.max(2, currentPage - 1)
-      const end = Math.min(totalPages - 1, currentPage + 1)
-
-      for (let i = start; i <= end; i++) {
-        items.push(
-          <PaginationItem key={i}>
-            <PaginationLink 
-              href="#" 
-              isActive={currentPage === i}
-              onClick={(e) => {
-                e.preventDefault()
-                handlePageChange(i)
-              }}
-            >
-              {i}
-            </PaginationLink>
-          </PaginationItem>
-        )
-      }
-
-      if (currentPage < totalPages - 2) {
-        items.push(
-          <PaginationItem key="ellipsis-end">
-            <PaginationEllipsis />
-          </PaginationItem>
-        )
-      }
-
-      items.push(
-        <PaginationItem key={totalPages}>
-          <PaginationLink 
-            href="#" 
-            isActive={currentPage === totalPages}
-            onClick={(e) => {
-              e.preventDefault()
-              handlePageChange(totalPages)
-            }}
-          >
-            {totalPages}
-          </PaginationLink>
-        </PaginationItem>
-      )
-    }
-
-    return items
+    updateParams({ page })
   }
 
   return (
@@ -694,54 +569,27 @@ const ManageUserPage = () => {
                           onCheckedChange={handleSelectAll}
                         />
                       </th>
-                      <th className="text-left p-2 font-medium text-gray-600">
-                        <Button
-                          variant="ghost"
-                          onClick={() => handleSortChange('id')}
-                          className="flex items-center gap-2"
-                        >
-                          ID
-                          { hasSortField && sortField === 'id' && (
-                            sortOrder === 'asc' ? (
-                              <ArrowDownNarrowWide className="h-4 w-4" />
-                            ) : (
-                              <ArrowDownWideNarrow className="h-4 w-4" />
-                            ) 
-                          )}
-                        </Button>
-                      </th>
-                      <th className="text-left p-4 font-medium text-gray-600">
-                        <Button
-                          variant="ghost"
-                          onClick={() => handleSortChange('name')}
-                          className="flex items-center gap-2"
-                        >
-                          Name
-                          {sortField === 'name' && (
-                            sortOrder === 'asc' ? (
-                              <ArrowDownNarrowWide className="h-4 w-4" />
-                            ) : (
-                              <ArrowDownWideNarrow className="h-4 w-4" />
-                            ) 
-                          )}
-                        </Button>
-                      </th>
-                      <th className="text-left p-4 font-medium text-gray-600">
-                        <Button
-                          variant="ghost"
-                          onClick={() => handleSortChange('email')}
-                          className="flex items-center gap-2"
-                        >
-                          Email
-                          {sortField === 'email' && (
-                            sortOrder === 'asc' ? (
-                              <ArrowDownNarrowWide className="h-4 w-4" />
-                            ) : (
-                              <ArrowDownWideNarrow className="h-4 w-4" />
-                            ) 
-                          )}
-                        </Button>
-                      </th>
+                      <SortableHeader
+                        field="id"
+                        label="ID"
+                        sortField={sortField}
+                        sortOrder={sortOrder}
+                        onSort={handleSortChange}
+                      />
+                      <SortableHeader
+                        field="name"
+                        label="Name"
+                        sortField={sortField}
+                        sortOrder={sortOrder}
+                        onSort={handleSortChange}
+                      />
+                      <SortableHeader
+                        field="email"
+                        label="Email"
+                        sortField={sortField}
+                        sortOrder={sortOrder}
+                        onSort={handleSortChange}
+                      />
                       <th className="text-left p-4 text-sm font-medium text-gray-600">
                           Phone
                       </th>
@@ -751,12 +599,13 @@ const ManageUserPage = () => {
                       <th className="text-left p-4 text-sm font-medium text-gray-600">
                           Status
                       </th>
-                      <th className="text-left p-4 text-sm font-medium text-gray-600">
-                        <Button variant="ghost" onClick={() => handleSortChange('createdAt')} className="flex items-center gap-2">
-                          Joined
-                          {sortField === 'createdAt' && <ArrowUpDown className={`h-4 w-4 ${sortOrder === 'asc' ? 'rotate-180' : ''}`} />}
-                        </Button>
-                      </th>
+                      <SortableHeader
+                        field="createdAt"
+                        label="Joined"
+                        sortField={sortField}
+                        sortOrder={sortOrder}
+                        onSort={handleSortChange}
+                      />
                       <th className="text-left p-4 text-sm font-medium text-gray-600">Actions</th>
                     </tr>
                   </thead>
@@ -770,7 +619,7 @@ const ManageUserPage = () => {
                           />
                         </td>
                         <td className="p-4">
-                          <p className="text-sm text-gray-500">{user.id}</p>
+                          <span className="text-sm pl-3 text-gray-500">{user.id}</span>
                         </td>
                         <td className="p-4">
                           <div className="flex items-center gap-3">
@@ -780,7 +629,7 @@ const ManageUserPage = () => {
                                 <User className="h-4 w-4" />
                               </AvatarFallback>
                             </Avatar>
-                            <p className="font-medium text-gray-900">{user.name}</p>
+                            <span className="font-medium text-sm text-gray-700">{user.name}</span>
                           </div>
                         </td>
                         <td className="p-4">
@@ -809,10 +658,10 @@ const ManageUserPage = () => {
                         </td>
                         <td className="p-4">
                           <div className="text-sm">
-                            <p className="text-gray-500 flex items-center gap-1 mt-1">
+                            <span className="text-gray-500 flex items-center gap-1 mt-1">
                               <Calendar className="h-3 w-3" />
                               Joined {new Date(user.createdAt).toLocaleDateString()}
-                            </p>
+                            </span>
                           </div>
                         </td>
                         <td className="p-4">
@@ -852,45 +701,14 @@ const ManageUserPage = () => {
             </CardContent>
           </Card>
 
-          <div className="mt-6 flex flex-col sm:flex-row items-center justify-between gap-4">
-            <p
-              className={`text-sm text-gray-600 sm:order-1 ${totalUsers === 0 ? 'text-center w-full' : ''}`}
-            >
-              {totalUsers > 0
-                ? `Showing ${startIndex} to ${endIndex} of ${totalUsers} users (Page ${currentPage} of ${totalPages})`
-                : 'No users found.'}
-            </p>
-
-            {totalPages >= 1 && (
-              <div className="w-full sm:w-auto sm:order-2 flex justify-end">
-                <Pagination>
-                  <PaginationContent>
-                    <PaginationItem>
-                      <PaginationPrevious 
-                        href="#" 
-                        onClick={(e) => {
-                          e.preventDefault()
-                          if (currentPage > 1) handlePageChange(currentPage - 1)
-                        }}
-                        className={currentPage === 1 ? 'pointer-events-none opacity-50' : ''}
-                      />
-                    </PaginationItem>
-                    {renderPaginationItems()}
-                    <PaginationItem>
-                      <PaginationNext 
-                        href="#" 
-                        onClick={(e) => {
-                          e.preventDefault()
-                          if (currentPage < totalPages) handlePageChange(currentPage + 1)
-                        }}
-                        className={currentPage === totalPages ? 'pointer-events-none opacity-50' : ''}
-                      />
-                    </PaginationItem>
-                  </PaginationContent>
-                </Pagination>
-              </div>
-            )}
-          </div>
+          <PaginationBar
+            currentPage={currentPage}
+            totalPages={totalPages}
+            totalItems={totalUsers}
+            startIndex={startIndex}
+            endIndex={endIndex}
+            onPageChange={handlePageChange}
+          />
         </div>
       </>
 

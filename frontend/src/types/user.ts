@@ -1,9 +1,4 @@
-interface IRole {
-  id: number
-  name: string
-  createdAt: string
-  updatedAt: string
-}
+import type { IRole } from "@/types/role"
 
 interface IUser {
   id: number
@@ -23,14 +18,7 @@ interface IUserCard {
   active: boolean
 }
 
-interface IAuthContextType {
-  user: IUser | null
-  setUser: (user: IUser | null) => void
-  loading: boolean
-  logout: () => Promise<void>
-}
-
-type BulkAction = 'activate' | 'deactivate' | 'delete'
+type BulkAction = "activate" | "deactivate" | "delete"
 
 
-export type { IAuthContextType, IUser, IUserCard, IRole, BulkAction }
+export type { IUser, IUserCard, BulkAction }

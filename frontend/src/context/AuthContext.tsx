@@ -1,6 +1,7 @@
 import { createContext, useState, useEffect } from 'react'
 import { getCurrentUser, logout} from '@/services/api'
-import type { IAuthContextType, IUser} from '@/types/user'
+import type { IUser} from '@/types/user'
+import type { IAuthContextType } from '@/types/auth'
 
 const AuthContext = createContext<IAuthContextType>({
     user: null,
